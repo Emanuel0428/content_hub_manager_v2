@@ -1,0 +1,286 @@
+openapi: 3.0.0
+info:
+  title: Content Hub Manager (MVP) API
+  version: 0.1.0
+paths:
+  /assets:
+    get:
+      summary: List assets for a user and platform
+      parameters:
+        - in: query
+          name: platform
+          openapi: 3.0.0
+          info:
+            title: Content Hub Manager (MVP) API
+            version: 0.1.0
+          servers:
+            - url: /api
+          paths:
+            /assets:
+              get:
+                summary: List assets for the current user (optionally filter by platform/folder/query)
+                parameters:
+                  - in: query
+                    name: platform
+                    schema:
+                      type: string
+                  - in: query
+                    name: q
+                    schema:
+                      type: string
+                  - in: query
+                    name: folder_id
+                    schema:
+                      type: string
+                  - in: query
+                    name: limit
+                    schema:
+                      type: integer
+                      default: 50
+                  - in: query
+                    name: offset
+                    schema:
+                      type: integer
+                      default: 0
+                responses:
+                  '200':
+                    description: OK
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/AssetList'
+              post:
+                summary: Create a new asset placeholder (metadata). Use upload flow to attach binary.
+                requestBody:
+                  required: true
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/AssetCreate'
+                responses:
+                  '201':
+                    description: Created
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/Asset'
+
+            /assets/{assetId}:
+              get:
+                summary: Retrieve asset metadata and versions
+                parameters:
+                  - in: path
+                    name: assetId
+                    required: true
+                    schema:
+                      type: string
+                responses:
+                  '200':
+                    description: OK
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/Asset'
+
+            /uploads:
+              post:
+                summary: Initiate an upload session (tus or server-managed)
+                requestBody:
+                  required: true
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/UploadInit'
+                responses:
+                  '201':
+                    description: Created
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/UploadSession'
+
+            /folders:
+              post:
+                summary: Create a folder
+                requestBody:
+                  required: true
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/FolderCreate'
+                responses:
+                  '201':
+                    description: Created
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/Folder'
+
+            /folders/{folderId}:
+              get:
+                summary: Retrieve folder with child assets
+                parameters:
+                  - in: path
+                    name: folderId
+                    required: true
+                    schema:
+                      type: string
+                responses:
+                  '200':
+                    description: OK
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/Folder'
+
+            /checklists/{assetId}:
+              get:
+                summary: Get checklist for an asset (platform-aware)
+                parameters:
+                  - in: path
+                    name: assetId
+                    required: true
+                    schema:
+                      type: string
+                responses:
+                  '200':
+                    description: OK
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/Checklist'
+
+          components:
+            schemas:
+              Asset:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                    enum: [image, video, audio, document]
+                  size_bytes:
+                    type: integer
+                  platform_origin:
+                    type: string
+                    enum: [twitch, tiktok, youtube, instagram, local]
+                  metadata:
+                    type: object
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AssetVersion'
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+              AssetVersion:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  asset_id:
+                    type: string
+                  version_number:
+                    type: integer
+                  storage_path:
+                    type: string
+                  checksum:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  created_by:
+                    type: string
+              AssetList:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+              AssetCreate:
+                type: object
+                required: [name, type]
+                properties:
+                  name:
+                    type: string
+                  type:
+                    type: string
+                    enum: [image, video, audio, document]
+                  platform_origin:
+                    type: string
+                  metadata:
+                    type: object
+              UploadInit:
+                type: object
+                required: [filename, contentType, size]
+                properties:
+                  filename:
+                    type: string
+                  contentType:
+                    type: string
+                  size:
+                    type: integer
+                  asset_id:
+                    type: string
+              UploadSession:
+                type: object
+                properties:
+                  upload_id:
+                    type: string
+                  upload_url:
+                    type: string
+                  protocol:
+                    type: string
+              FolderCreate:
+                type: object
+                required: [name]
+                properties:
+                  name:
+                    type: string
+                  parent_id:
+                    type: string
+              Folder:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  parent_id:
+                    type: string
+                  assets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+              ChecklistItem:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  description:
+                    type: string
+                  required:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [pending, completed]
+              Checklist:
+                type: object
+                properties:
+                  asset_id:
+                    type: string
+                  platform:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChecklistItem'

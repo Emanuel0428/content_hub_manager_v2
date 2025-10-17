@@ -1,50 +1,67 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+
+# Content Hub Manager Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Platform-Agnostic Unified Dashboard
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- Provide a single, consistent UI to manage platform-specific assets for Twitch, TikTok, YouTube, and Instagram.
+- Encapsulate platform differences behind adapter contracts; users switch platforms without context loss.
+- Maintain parity of core actions across platforms: browse, upload, preview, organize, and checklist verification.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Asset-Centric Information Architecture
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+- Treat assets as first-class entities: videos, images, overlays, thumbnails, scene files, captions, descriptions.
+- Support versioning, folder-based organization, tags, and saved filters; enable fast search and de-duplication.
+- Maintain platform-aware metadata schemas (e.g., title length, aspect ratio, hashtags) with validation rules.
+- Allow pre-publication checklists per platform;
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Test-First and Contract-Driven
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Tests precede implementation (Red-Green-Refactor); unit, integration, and e2e suites are mandatory.
+- Define clear API and adapter contracts using JSON Schema/OpenAPI; enforce with contract tests and mocks.
+- Include deterministic e2e scenarios for: upload, preview, folder operations, checklist gating, and platform switch.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Observability, Versioning, and Simplicity
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- Provide structured logging, tracing, and metrics for uploads, previews, checklist results, and publish attempts.
+- Follow semantic versioning; document breaking changes and migration paths for adapters and APIs.
+- Favor simple solutions first; feature-flag risky changes; define SLOs for latency, reliability, and UX responsiveness.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Additional Constraints & Product Requirements
+
+- **Users & Roles**: Creator, Editor, Admin with role-based access control.
+- **Platforms (v1)**: Twitch, TikTok, YouTube, Instagram via adapters; easy extension to new platforms.
+- **Asset Management**:
+  - Upload from device or import from URL/cloud; supported types: video, image, audio, text/caption, scene/overlay files.
+  - Folder hierarchy, tags, bulk actions, drag-and-drop, duplicate detection, and safe rename/move.
+  - Previews: image thumbnails, video scrub/playback, audio waveform, overlay/scene viewer where feasible.
+- **Metadata & Validation**:
+  - Platform-specific fields with inline validation (e.g., title length, aspect ratio, duration caps, caption presence).
+  - Templated descriptions/hashtags; reusable presets; auto-fill from previous versions/drafts.
+- **Checklists (Pre-Live/Pre-Publish)**:
+  - Per-platform checklist templates (editable by Admin) with required/optional items.
+  - Gate go-live/publish until required items pass; show blockers and quick-fix links.
+- **Performance & Reliability**:
+  - Large-file uploads with resumable, chunked transfer; background processing and progress reporting.
+  - Target p95 UI action latency <300ms (non-upload), upload throughput limited by network/infra.
+- **Internationalization & Accessibility**: i18n-ready strings; WCAG-compliant UI controls and keyboard navigation.
+- **Data Management**: Configurable retention for derived artifacts; object storage for assets; CDN for previews.
+- **Resilience**: Graceful degradation when a platform API is down; queue-based retries and user-facing status.
+
+## Development Workflow & Quality Gates
+
+- **Branching & Reviews**: Trunk-based with short-lived feature branches; at least 1 peer review per PR.
+- **CI Gates**: Lint, type check, unit tests, integration tests, e2e smoke; min 80% coverage on changed lines.
+- **Security & Quality**: SAST/dependency scanning; secret detection; accessibility and performance checks in CI.
+- **Releases**: Semantic versioning; changelogs; blue/green or canary deployments; rollbacks under 10 minutes.
+- **Documentation**: Updated API/adapter contracts, user guides for checklist templates, and runbooks for incidents.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution supersedes ad-hoc practices; deviations require a documented exception and time-bound plan.
+- Amendments require: written proposal, impact analysis, migration strategy, and approval from maintainers.
+- All PRs must attest compliance with Core Principles and Quality Gates; CI enforces non-negotiable checks.
+- Adapter contracts are versioned; breaking changes require deprecation policy and dual-support where feasible.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-10-16 | **Last Amended**: 2025-10-16
