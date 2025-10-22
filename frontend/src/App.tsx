@@ -6,10 +6,14 @@ import AssetList from './components/AssetList'
 import ErrorToast from './components/ErrorToast'
 import EventsViewer from './components/EventsViewer'
 import FolderManager from './components/FolderManager'
+import PlatformNavigator from './components/platform/PlatformNavigator'
+import PlatformViewContainer from './components/platform/PlatformViewContainer'
+import { usePlatform } from './hooks/usePlatform'
 
 function AppContent() {
   const [error, setError] = useState<string | null>(null)
   const { darkMode, toggleDarkMode } = useTheme()
+  const { activePlatform, setActivePlatform } = usePlatform()
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-slate-900' : 'bg-white'}`}>
@@ -36,7 +40,22 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-8 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Platform Navigation */}
+        <PlatformNavigator
+          activePlatform={activePlatform}
+          onPlatformChange={setActivePlatform}
+        />
+
+        {/* Platform-Specific Content */}
+        <div className="mb-6">
+          <PlatformViewContainer
+            activePlatform={activePlatform}
+            onError={setError}
+          />
+        </div>
+
+        {/* Original Layout - Keep for now, will integrate with platform views later */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10 pt-10 border-t border-slate-200 dark:border-slate-700">
           {/* Left Sidebar */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             {/* Upload Widget */}
