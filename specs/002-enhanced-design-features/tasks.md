@@ -1,237 +1,208 @@
-# Tasks: Enhanced Design Features
+# Tasks: Multi-Platform Content Management
 
 **Feature ID**: 002-enhanced-design-features  
 **Last Updated**: 2025-10-21
 
-## Phase 1: Foundation (Design Tokens & Base Components)
+---
 
-### Task 1.1: Design Token System
-- [ ] Create `tokens.ts` with color palette
-- [ ] Define typography scale
-- [ ] Set up spacing scale
-- [ ] Define shadow and border radius values
-- [ ] Add transition/animation presets
-- [ ] Update `tailwind.config.js` with custom tokens
-- [ ] Add CSS custom properties in `index.css`
+## Phase 1: Database & Backend (Foundation)
 
-**Estimated**: 4 hours
-
-### Task 1.2: Base UI Components
-- [ ] Create `Button.tsx` with variants (primary, secondary, ghost, danger)
-- [ ] Create `Input.tsx` with states (default, focus, error, disabled)
-- [ ] Create `Card.tsx` with consistent styling
-- [ ] Create `Skeleton.tsx` for loading states
-- [ ] Add TypeScript types for all components
-- [ ] Write basic documentation
-
-**Estimated**: 6 hours
-
-## Phase 2: Component Enhancements
-
-### Task 2.1: AssetList Improvements
-- [ ] Add skeleton loading state
-- [ ] Create empty state with illustration
-- [ ] Implement smooth view transitions (grid/list)
-- [ ] Add hover effects to cards
-- [ ] Implement blur-up effect for thumbnails
-- [ ] Add stagger animations for list items
-
-**Estimated**: 5 hours
-
-### Task 2.2: UploadWidget Improvements
-- [ ] Add drag-over visual feedback
-- [ ] Enhance progress animations
-- [ ] Improve success/error states
-- [ ] Add file type icons
-- [ ] Create upload queue visualization
-- [ ] Add cancel upload functionality UI
-
-**Estimated**: 4 hours
-
-### Task 2.3: FolderManager Improvements
-- [ ] Enhance tree view styling
-- [ ] Add breadcrumb navigation
-- [ ] Implement context menu animations
-- [ ] Add folder icon states (open/closed/empty)
-- [ ] Improve spacing and hierarchy
-
-**Estimated**: 4 hours
-
-### Task 2.4: AssetPreview Improvements
-- [ ] Add smooth modal transitions
-- [ ] Implement pinch-to-zoom on mobile (if applicable)
-- [ ] Better metadata display layout
-- [ ] Add download/share action buttons
-- [ ] Improve close button placement
-
-**Estimated**: 4 hours
-
-### Task 2.5: ErrorToast Enhancements
-- [ ] Add slide-in animation
-- [ ] Implement auto-dismiss with pause on hover
-- [ ] Add action buttons (retry, dismiss)
-- [ ] Improve icon usage
-- [ ] Add different toast types (success, info, warning, error)
+### Task 1.1: Database Schema Update
+- [ ] Create migration script for new columns (`platform`, `category`, `resolution`, `tags`)
+- [ ] Add indexes for `platform` and `category`
+- [ ] Test migration with existing data from 001
+- [ ] Verify backward compatibility
 
 **Estimated**: 3 hours
 
-## Phase 3: Responsive Design
-
-### Task 3.1: Mobile Optimizations
-- [ ] Implement mobile-first layouts
-- [ ] Adjust touch target sizes (≥ 44x44px)
-- [ ] Optimize navigation for mobile
-- [ ] Test on iOS and Android devices
-- [ ] Add mobile-specific interactions
-
-**Estimated**: 6 hours
-
-### Task 3.2: Tablet Optimizations
-- [ ] Create adaptive grid layouts
-- [ ] Test on tablet devices (iPad, Android tablets)
-- [ ] Optimize sidebar behavior
-- [ ] Adjust spacing for medium screens
+### Task 1.2: Backend API Updates
+- [ ] Update `GET /api/assets` to support `?platform=` and `?category=` filters
+- [ ] Update `POST /api/assets` to accept platform/category metadata
+- [ ] Add `PATCH /api/assets/:id` for updating metadata
+- [ ] Add `GET /api/platforms` endpoint (returns platform configs)
+- [ ] Test all endpoints with Postman/cURL
 
 **Estimated**: 4 hours
 
-### Task 3.3: Breakpoint Testing
-- [ ] Test all breakpoints
-- [ ] Fix overflow issues
-- [ ] Ensure no horizontal scroll
-- [ ] Test landscape/portrait orientations
-
-**Estimated**: 3 hours
-
-## Phase 4: Accessibility
-
-### Task 4.1: Keyboard Navigation
-- [ ] Add focus indicators to all interactive elements
-- [ ] Implement keyboard shortcuts
-- [ ] Add skip navigation links
-- [ ] Test tab order
-- [ ] Add focus trapping in modals
-
-**Estimated**: 4 hours
-
-### Task 4.2: Screen Reader Support
-- [ ] Add ARIA labels to all components
-- [ ] Implement ARIA live regions for dynamic content
-- [ ] Add alt text to images
-- [ ] Test with NVDA/JAWS
-- [ ] Add screen reader-only text where needed
-
-**Estimated**: 5 hours
-
-### Task 4.3: Color Contrast & Visual Accessibility
-- [ ] Audit color contrast ratios
-- [ ] Fix any contrast issues
-- [ ] Test with color blindness simulators
-- [ ] Implement `prefers-reduced-motion` support
-- [ ] Add visual focus indicators
-
-**Estimated**: 3 hours
-
-## Phase 5: Animations & Polish
-
-### Task 5.1: Micro-interactions
-- [ ] Add button press feedback
-- [ ] Implement checkbox/toggle animations
-- [ ] Create smooth modal transitions
-- [ ] Add list item animations
-- [ ] Implement loading spinners
-
-**Estimated**: 4 hours
-
-### Task 5.2: Page Transitions
-- [ ] Add route transition animations (if applicable)
-- [ ] Implement fade-in for new content
-- [ ] Add slide transitions where appropriate
-- [ ] Optimize animation performance
-
-**Estimated**: 3 hours
-
-### Task 5.3: Animation Utilities
-- [ ] Create `animations.ts` with reusable presets
-- [ ] Document animation usage
-- [ ] Add animation constants (durations, easings)
-- [ ] Test performance on low-end devices
-
-**Estimated**: 2 hours
-
-## Phase 6: Testing & Documentation
-
-### Task 6.1: Visual Testing
-- [ ] Set up visual regression tests (optional)
-- [ ] Test on Chrome, Firefox, Safari
-- [ ] Test on different screen sizes
-- [ ] Document browser compatibility
-
-**Estimated**: 4 hours
-
-### Task 6.2: Accessibility Audit
-- [ ] Run axe DevTools audit
-- [ ] Fix all critical issues
-- [ ] Document accessibility features
-- [ ] Create accessibility statement
-
-**Estimated**: 4 hours
-
-### Task 6.3: Performance Testing
-- [ ] Run Lighthouse audit
-- [ ] Optimize bundle size
-- [ ] Optimize images/assets
-- [ ] Test on slow networks
-- [ ] Document performance metrics
-
-**Estimated**: 3 hours
-
-### Task 6.4: Documentation
-- [ ] Update README with new features
-- [ ] Document design token usage
-- [ ] Create component usage examples
-- [ ] Document keyboard shortcuts
-- [ ] Add screenshots to docs
-
-**Estimated**: 3 hours
-
-## Phase 7: Review & Refinement
-
-### Task 7.1: Code Review
-- [ ] Self-review all changes
-- [ ] Ensure code follows project standards
-- [ ] Check for unused code
-- [ ] Optimize imports
-- [ ] Add comments where needed
-
-**Estimated**: 3 hours
-
-### Task 7.2: User Testing (Optional)
-- [ ] Gather user feedback
-- [ ] Create feedback survey
-- [ ] Implement critical fixes
-- [ ] Document feedback
-
-**Estimated**: 4 hours
-
-### Task 7.3: Final Polish
-- [ ] Fix any remaining issues
-- [ ] Verify all acceptance criteria
-- [ ] Update changelog
-- [ ] Prepare for merge
+### Task 1.3: File Storage Organization
+- [ ] Create platform-based folder structure (`/uploads/twitch/`, `/youtube/`, etc.)
+- [ ] Update upload logic to save files in platform/category folders
+- [ ] Test file upload with platform context
+- [ ] Verify file paths in database
 
 **Estimated**: 2 hours
 
 ---
 
+## Phase 2: Platform Configuration (Frontend)
+
+### Task 2.1: Type Definitions
+- [ ] Create `types/platform.ts` with Platform, PlatformConfig, CategoryConfig types
+- [ ] Create `types/asset.ts` with updated Asset interface (platform, category fields)
+- [ ] Export all types
+
+**Estimated**: 1 hour
+
+### Task 2.2: Platform Constants
+- [ ] Create `constants/platforms.ts`
+- [ ] Define Twitch platform config (categories, colors, dimensions)
+- [ ] Define YouTube platform config
+- [ ] Define TikTok platform config
+- [ ] Export PLATFORMS registry
+
+**Estimated**: 2 hours
+
+### Task 2.3: Custom Hooks
+- [ ] Create `usePlatform` hook (manages active platform state)
+- [ ] Create `useAssetFilter` hook (filters assets by platform/category)
+- [ ] Create `usePlatformCategories` hook (gets categories for active platform)
+
+**Estimated**: 2 hours
+
+---
+
+## Phase 3: Platform Navigation Component
+
+### Task 3.1: PlatformNavigator Component
+- [ ] Create `components/platform/PlatformNavigator.tsx`
+- [ ] Horizontal tabs/pills for each platform (Twitch, YouTube, TikTok)
+- [ ] Active platform highlighting
+- [ ] Platform icons and colors
+- [ ] onClick handler to change active platform
+- [ ] Persist selection in localStorage
+
+**Estimated**: 4 hours
+
+### Task 3.2: Integration with App
+- [ ] Add PlatformNavigator to `App.tsx` layout
+- [ ] Wire up platform state (Context or useState)
+- [ ] Test platform switching
+- [ ] Ensure smooth transition
+
+**Estimated**: 2 hours
+
+---
+
+## Phase 4: Twitch View (First Platform)
+
+### Task 4.1: TwitchView Component
+- [ ] Create `components/platform/TwitchView.tsx`
+- [ ] Layout with category sections or tabs
+- [ ] Display Twitch-specific categories (Emotes, Thumbnails, etc.)
+- [ ] Integrate AssetGrid filtered by platform='twitch'
+
+**Estimated**: 3 hours
+
+### Task 4.2: CategorySection Component
+- [ ] Create `components/platform/CategorySection.tsx`
+- [ ] Props: platform, category, title, description, icon
+- [ ] Display category header with icon and dimensions info
+- [ ] Render AssetGrid for that category
+- [ ] Empty state if no assets in category
+
+**Estimated**: 3 hours
+
+### Task 4.3: Asset Filtering Logic
+- [ ] Update `AssetList` to accept platform/category filters
+- [ ] Fetch assets with `GET /api/assets?platform=twitch&category=emotes`
+- [ ] Test filtering works correctly
+- [ ] Handle loading and error states
+
+**Estimated**: 3 hours
+
+### Task 4.4: Twitch-Specific Styling
+- [ ] Apply Twitch purple (#9146FF) accent colors
+- [ ] Add Twitch logo/icon
+- [ ] Polish layout and spacing
+
+**Estimated**: 2 hours
+
+---
+
+## Phase 5: YouTube & TikTok Views
+
+### Task 5.1: YouTubeView Component
+- [ ] Create `components/platform/YouTubeView.tsx`
+- [ ] YouTube-specific categories (Thumbnails, Channel Art, etc.)
+- [ ] Apply YouTube red (#FF0000) styling
+- [ ] Integrate AssetGrid filtered by platform='youtube'
+
+**Estimated**: 3 hours
+
+### Task 5.2: TikTokView Component
+- [ ] Create `components/platform/TikTokView.tsx`
+- [ ] TikTok-specific categories (Thumbnails, Profile, Clips)
+- [ ] Apply TikTok black/cyan styling
+- [ ] Vertical-optimized grid layout
+
+**Estimated**: 3 hours
+
+---
+
+## Phase 6: Enhanced Upload Workflow
+
+### Task 6.1: Context-Aware Upload
+- [ ] Update `UploadWidget` to accept platform/category props
+- [ ] Auto-tag uploaded files with current platform and category
+- [ ] Show platform/category in upload UI
+- [ ] Category selector dropdown
+
+**Estimated**: 4 hours
+
+### Task 6.2: File Validation
+- [ ] Validate file dimensions per category
+- [ ] Validate file formats (PNG for emotes, etc.)
+- [ ] Show validation errors before upload
+- [ ] Test with various file types
+
+**Estimated**: 3 hours
+
+---
+
+## Phase 7: Asset Card & Preview Enhancements
+
+### Task 7.1: AssetCard Updates
+- [ ] Show platform badge (icon)
+- [ ] Show category label
+- [ ] Display resolution info
+- [ ] Test with multi-platform assets
+
+**Estimated**: 3 hours
+
+### Task 7.2: AssetPreview Modal
+- [ ] Show platform and category metadata
+- [ ] Add metadata editing form
+- [ ] Call `PATCH /api/assets/:id` on save
+- [ ] Show success/error feedback
+
+**Estimated**: 4 hours
+
+---
+
+## Phase 8: Testing & Documentation
+
+### Task 8.1: Functional Testing
+- [ ] Test all platform views
+- [ ] Test filtering and search
+- [ ] Test upload workflow
+- [ ] Test metadata editing
+
+**Estimated**: 4 hours
+
+### Task 8.2: Documentation
+- [ ] Update README with platform features
+- [ ] Document migration from 001
+- [ ] Add screenshots
+- [ ] Document platform configurations
+
+**Estimated**: 3 hours
+
+---
+
 ## Total Estimated Time
-**~80 hours** (~2 weeks for one developer)
+**~75 hours** (~3 weeks)
 
 ## Priority Labels
-- 🔴 Critical (must have)
-- 🟡 Important (should have)
-- 🟢 Nice to have (could defer)
-
-## Notes
-- Tasks can be worked in parallel where dependencies allow
-- Adjust estimates based on actual complexity encountered
-- Add new tasks as needed during implementation
+- 🔴 Critical: Phases 1-4 (Twitch view working)
+- 🟡 Important: Phases 5-7 (Other platforms + upload)
+- 🟢 Nice to have: Polish and advanced features

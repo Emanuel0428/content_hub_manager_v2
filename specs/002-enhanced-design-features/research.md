@@ -1,312 +1,284 @@
-# Research: Enhanced Design Features
+# Research: Multi-Platform Content Management
 
 **Feature ID**: 002-enhanced-design-features  
 **Last Updated**: 2025-10-21
 
 ## Overview
 
-This document captures research, decisions, and learnings related to enhancing the design and UX of the content platform dashboard.
+Research and decisions for building a multi-platform content management system for creators (Twitch, YouTube, TikTok).
 
 ---
 
-## Design System Approaches
+## Platform Asset Requirements
 
-### Option 1: Tailwind-Only
-**Pros**:
-- Already integrated
-- No additional dependencies
-- Fast development
-- Customizable via `tailwind.config.js`
+### Twitch
 
-**Cons**:
-- Less opinionated (need to define everything)
-- No pre-built component library
+#### Official Guidelines
+- **Emotes**: 28x28, 56x56, 112x112 pixels (PNG, transparent recommended)
+- **Badges**: 18x18, 36x36, 72x72 pixels (PNG, transparent)
+- **Profile Banner**: 1200x480 pixels
+- **Offline Banner**: 1920x1080 pixels
+- **Video Player Banner**: 1920x1080 pixels
+- **Panels**: 320 pixels wide, height flexible (typically 100-600px)
 
-**Decision**: ✅ Use Tailwind with custom tokens
+**Sources**: [Twitch Creator Camp](https://www.twitch.tv/creatorcamp)
 
-### Option 2: Material-UI (MUI)
-**Pros**:
-- Comprehensive component library
-- Built-in accessibility
-- Well-documented
+### YouTube
 
-**Cons**:
-- Heavy bundle size (~300KB)
-- Learning curve
-- May look generic
+#### Official Guidelines
+- **Thumbnails**: 1280x720 pixels (min width 640px), under 2MB, JPG/PNG/GIF/BMP
+- **Channel Art**: 2560x1440 pixels (safe area: 1546x423)
+- **Profile Picture**: 800x800 pixels
+- **Watermark**: 150x150 pixels (PNG with transparency)
+- **End Screens**: 1920x1080 pixels
 
-**Decision**: ❌ Too heavy for current needs
+**Sources**: [YouTube Help Center](https://support.google.com/youtube)
 
-### Option 3: Headless UI + Tailwind
-**Pros**:
-- Accessible components (keyboard, ARIA)
-- Unstyled (full control)
-- Small bundle size
+### TikTok
 
-**Cons**:
-- Still need to style everything
-- Additional dependency
+#### Best Practices
+- **Video**: 1080x1920 pixels (9:16 aspect ratio)
+- **Profile Picture**: 200x200 pixels
+- **Cover Image**: 1080x1920 pixels
 
-**Decision**: 🤔 Consider for future complex components (modals, dropdowns)
+**Sources**: [TikTok Creator Portal](https://www.tiktok.com/creators/creator-portal/en-us/)
 
 ---
 
-## Animation Libraries
+## Technical Decisions
 
-### Option 1: CSS Animations
-**Pros**:
-- No dependencies
-- Great performance (GPU accelerated)
-- Simple for basic transitions
+### Database Schema Choice
 
-**Cons**:
-- Verbose for complex animations
-- Harder to orchestrate
+**Decision**: Add metadata columns to existing `assets` table
 
-**Decision**: ✅ Use for micro-interactions and simple transitions
+**Why**:
+- ✅ Simpler than creating separate tables per platform
+- ✅ Easier to query all assets with filters
+- ✅ Minimal migration complexity
+- ❌ Alternative (separate tables) would complicate joins and filtering
 
-### Option 2: Framer Motion
-**Pros**:
-- React-friendly API
-- Declarative animations
-- Orchestration and variants
-- Gesture support
+**Schema**:
+```sql
+ALTER TABLE assets ADD COLUMN platform TEXT DEFAULT 'all';
+ALTER TABLE assets ADD COLUMN category TEXT;
+ALTER TABLE assets ADD COLUMN resolution TEXT;
+ALTER TABLE assets ADD COLUMN tags TEXT; -- JSON string
+```
 
-**Cons**:
-- ~50KB bundle size
-- May be overkill for simple needs
+### File Storage Organization
 
-**Decision**: 🤔 Evaluate during implementation (start with CSS, upgrade if needed)
+**Decision**: Platform-based folder structure
 
-### Option 3: React Spring
-**Pros**:
-- Physics-based animations
-- Flexible
+```
+/uploads/
+  /twitch/emotes/
+  /twitch/thumbnails/
+  /youtube/thumbnails/
+  /tiktok/clips/
+```
 
-**Cons**:
-- Steeper learning curve
-- Larger bundle
+**Why**:
+- ✅ Easy to backup platform-specific assets
+- ✅ Clear organization
+- ✅ Easy to migrate to cloud storage later (S3 buckets per platform)
 
-**Decision**: ❌ Not needed for current scope
+### Platform Navigation Pattern
 
----
+**Decision**: Top navigation tabs (horizontal)
 
-## Accessibility Research
+**Why**:
+- ✅ Common pattern (Figma, Notion, VS Code use tabs)
+- ✅ Clear visual separation
+- ✅ Easy to add more platforms later
+- ❌ Alternative (sidebar) takes more space
 
-### WCAG 2.1 AA Requirements (Summary)
+### State Management
 
-#### Perceivable
-- **1.1.1 Non-text Content**: All images, icons must have alt text
-- **1.4.3 Contrast**: ≥ 4.5:1 for normal text, ≥ 3:1 for large text
-- **1.4.10 Reflow**: Content works at 320px width (mobile)
-- **1.4.11 Non-text Contrast**: ≥ 3:1 for UI components
+**Decision**: React Context for platform state
 
-#### Operable
-- **2.1.1 Keyboard**: All functionality via keyboard
-- **2.1.2 No Keyboard Trap**: User can always escape
-- **2.4.7 Focus Visible**: Clear focus indicators
-- **2.5.5 Target Size**: Touch targets ≥ 44x44px
-
-#### Understandable
-- **3.1.1 Language**: HTML lang attribute set
-- **3.2.1 On Focus**: No context change on focus
-- **3.3.1 Error Identification**: Errors clearly identified
-- **3.3.2 Labels**: All inputs have labels
-
-#### Robust
-- **4.1.2 Name, Role, Value**: Proper ARIA attributes
-- **4.1.3 Status Messages**: Dynamic content announced
-
-### Tools for Testing
-- **axe DevTools**: Browser extension for automated testing
-- **NVDA (Windows)**: Free screen reader
-- **JAWS (Windows)**: Industry-standard screen reader (paid)
-- **VoiceOver (macOS/iOS)**: Built-in screen reader
-- **Lighthouse**: Chrome DevTools accessibility audit
-- **WebAIM Contrast Checker**: Color contrast validation
+**Why**:
+- ✅ Simple (no external library needed)
+- ✅ Good for app-wide platform state
+- ✅ Easy to persist to localStorage
+- ❌ Alternative (Redux) is overkill for this use case
 
 ---
 
-## Responsive Design Breakpoints
+## UI/UX Patterns
 
-### Industry Standards
-- **Tailwind CSS Defaults**:
-  - sm: 640px
-  - md: 768px
-  - lg: 1024px
-  - xl: 1280px
-  - 2xl: 1536px
+### Platform Branding
 
-- **Common Device Widths**:
-  - Mobile: 320px - 480px
-  - Tablet (portrait): 481px - 768px
-  - Tablet (landscape): 769px - 1024px
-  - Desktop: 1025px+
+**Decision**: Use official platform colors as accents
 
-**Decision**: Use Tailwind defaults (sm, md, lg) for our breakpoints
+- Twitch: `#9146FF` (purple)
+- YouTube: `#FF0000` (red)
+- TikTok: `#000000` + `#00F2EA` (black/cyan)
+
+**Application**:
+- Active tab highlight
+- Platform badges on asset cards
+- Category section headers
+
+### Category Display
+
+**Decision**: Tab-based categories within each platform view
+
+**Why**:
+- ✅ Reduces visual clutter
+- ✅ Familiar pattern
+- ✅ Easy to scan
+- ❌ Alternative (all categories visible) would be overwhelming
+
+### Empty States
+
+**Best Practice**: Show helpful message + CTA
+
+Example:
+```
+"No emotes yet!"
+"Upload your first emote to get started"
+[Upload Emote] button
+```
+
+---
+
+## File Validation Strategy
+
+### Approach
+
+**Decision**: Client-side validation before upload
+
+**Validation Rules per Category**:
+- Dimensions (e.g., emotes must be 28x28, 56x56, or 112x112)
+- File format (e.g., emotes must be PNG)
+- File size (e.g., under 1MB)
+
+**Why**:
+- ✅ Better UX (immediate feedback)
+- ✅ Reduces failed uploads
+- ✅ Saves server processing
+- ⚠️ Still validate server-side for security
+
+### Implementation
+```typescript
+function validateEmote(file: File): ValidationResult {
+  if (!file.type.includes('png')) return { valid: false, error: 'Must be PNG' };
+  // Check dimensions via Image API
+  // Check file size
+}
+```
 
 ---
 
 ## Performance Considerations
 
-### Bundle Size Targets
-- Initial JS bundle: < 200KB (gzipped)
-- CSS bundle: < 50KB (gzipped)
-- Total page load: < 1MB
+### Asset Loading
 
-### Lighthouse Score Targets
-- Performance: ≥ 90
-- Accessibility: 100
-- Best Practices: ≥ 95
-- SEO: ≥ 90
+**Lazy Loading**: Load assets for active platform/category only
 
-### Animation Performance
-- Use `transform` and `opacity` (GPU accelerated)
-- Avoid animating `width`, `height`, `top`, `left` (causes reflow)
-- Target 60fps (16.67ms per frame)
-- Use `will-change` sparingly (memory cost)
-- Respect `prefers-reduced-motion`
+```typescript
+useEffect(() => {
+  fetchAssets({ platform: activePlatform, category: activeCategory });
+}, [activePlatform, activeCategory]);
+```
+
+### Thumbnail Generation
+
+**Decision**: Keep existing thumbnail generation from 001
+
+**No changes needed** - existing logic works for all platforms
+
+### Indexing
+
+**Database Indexes**:
+```sql
+CREATE INDEX idx_assets_platform ON assets(platform);
+CREATE INDEX idx_assets_category ON assets(category);
+CREATE INDEX idx_assets_platform_category ON assets(platform, category);
+```
+
+**Why**: Speeds up filtering queries significantly
 
 ---
 
-## Design Token Structure
+## Future Extensibility
 
-### Color Palette (Example)
+### Adding New Platforms
+
+**Design**: Platform configs are data-driven
+
 ```typescript
-colors: {
-  primary: {
-    50: '#...',
-    100: '#...',
-    // ... 200-800
-    900: '#...',
-  },
-  neutral: { ... },
-  success: { ... },
-  error: { ... },
-  warning: { ... },
-  info: { ... },
-}
+// To add Instagram:
+export const INSTAGRAM_PLATFORM: PlatformConfig = {
+  id: 'instagram',
+  name: 'Instagram',
+  color: '#E1306C',
+  icon: InstagramIcon,
+  categories: [
+    { id: 'posts', name: 'Posts', dimensions: '1080x1080' },
+    { id: 'stories', name: 'Stories', dimensions: '1080x1920' },
+    // ...
+  ],
+};
+
+// Add to registry:
+export const PLATFORMS = {
+  ...
+  instagram: INSTAGRAM_PLATFORM,
+};
 ```
 
-### Typography Scale
-```typescript
-fontSize: {
-  xs: ['0.75rem', { lineHeight: '1rem' }],
-  sm: ['0.875rem', { lineHeight: '1.25rem' }],
-  base: ['1rem', { lineHeight: '1.5rem' }],
-  lg: ['1.125rem', { lineHeight: '1.75rem' }],
-  xl: ['1.25rem', { lineHeight: '1.75rem' }],
-  // ...
-}
-```
+No code changes needed beyond adding config!
 
-### Spacing (4px base grid)
-```typescript
-spacing: {
-  0: '0px',
-  1: '4px',
-  2: '8px',
-  3: '12px',
-  4: '16px',
-  5: '20px',
-  6: '24px',
-  8: '32px',
-  10: '40px',
-  12: '48px',
-  16: '64px',
-  20: '80px',
-  24: '96px',
-}
-```
+### Platform API Integration
 
----
-
-## Component Patterns
-
-### Loading States
-- **Spinner**: For short actions (< 2 seconds)
-- **Progress Bar**: For long actions with known progress
-- **Skeleton**: For initial page/section load
-
-### Empty States
-- Icon or illustration
-- Helpful message
-- Call-to-action (if applicable)
-
-### Error States
-- Clear error message
-- Icon (⚠️ or ❌)
-- Retry action (if applicable)
-- Contact support link (for critical errors)
+**Out of scope for 002**, but planned for 003:
+- Direct upload to Twitch (via Twitch API)
+- Upload to YouTube (via YouTube Data API)
+- Requires OAuth authentication
 
 ---
 
 ## Open Questions & Decisions
 
-### Question: Animation Library?
-**Status**: TBD during implementation  
-**Options**: CSS-only vs. Framer Motion  
-**Decision Point**: If complex orchestration needed, add Framer Motion
+### Q: Should we allow multi-platform tagging?
 
-### Question: Dark Mode?
-**Status**: Deferred to 003-dark-mode-theme  
-**Rationale**: Focus on polish first, theming is a separate feature
+**Status**: YES  
+**Decision**: Assets can have `platform: 'all'` or multiple platforms  
+**Rationale**: Some thumbnails work across platforms
 
-### Question: Component Library?
-**Status**: Build our own base components  
-**Rationale**: More control, smaller bundle, learning opportunity
+### Q: File dimension validation - strict or flexible?
 
-### Question: Icon System?
-**Status**: Use existing (Heroicons or similar)  
-**Decision**: Stick with what's already in 001, ensure consistency
+**Status**: Flexible (warnings, not blocks)  
+**Rationale**: Creators may have valid reasons for different sizes
 
----
+### Q: Should we support bulk operations?
 
-## Learnings from 001
-
-### What Worked Well
-- Tailwind CSS setup was straightforward
-- React component structure is clean
-- Vite build speed is excellent
-
-### What Needs Improvement (This Feature)
-- No consistent design tokens
-- Loading states are basic
-- Mobile experience is functional but not polished
-- Accessibility needs attention
-- Animations are minimal
+**Status**: Deferred to 003  
+**Rationale**: Focus on core functionality first
 
 ---
 
-## Inspiration & References
+## Learnings from Similar Products
 
-### Design Systems
-- [Tailwind UI](https://tailwindui.com) - Component examples
-- [Shadcn UI](https://ui.shadcn.com) - Component patterns
-- [Material Design](https://m3.material.io) - Design principles
-- [Apple HIG](https://developer.apple.com/design/human-interface-guidelines/) - UX patterns
+### Observed in Streamlabs/StreamElements
+- Separate sections for different asset types ✅ Adopt this
+- Drag-and-drop upload ✅ Keep from 001
+- Quick preview on hover ✅ Keep from 001
 
-### Accessibility
-- [A11y Project](https://www.a11yproject.com) - Accessibility checklist
-- [Inclusive Components](https://inclusive-components.design) - Accessible patterns
-- [WebAIM](https://webaim.org) - Resources and tools
-
-### Animation
-- [UI Animation Principles](https://uxdesign.cc/the-ultimate-guide-to-proper-use-of-animation-in-ux-10bd98614fa9)
-- [Cubic-bezier.com](https://cubic-bezier.com) - Easing function visualizer
-- [12 Principles of Animation](https://www.creativebloq.com/advice/understand-the-12-principles-of-animation)
+### Observed in Canva
+- Template system (create from template) ⏳ Future feature
+- Resize/export for different platforms ⏳ Future feature
 
 ---
 
-## Future Iterations (Out of Scope)
+## References
 
-- Advanced theming (multiple color schemes)
-- Component playground/Storybook
-- Custom branding options
-- Advanced animations (parallax, 3D transforms)
-- Internationalization (i18n)
-- Offline support (PWA)
+- [Twitch Branding Guidelines](https://brand.twitch.tv/)
+- [YouTube Creator Resources](https://www.youtube.com/creators/)
+- [TikTok Brand Guidelines](https://www.tiktok.com/brand)
+- [Figma Community - Platform Icons](https://www.figma.com/community)
 
 ---
 
-**Notes**: Update this document as new research is conducted or decisions are made during implementation.
+**Notes**: Update this document as implementation progresses and new decisions are made.
