@@ -219,7 +219,7 @@
 - [X] Upload flow works for all platforms
 - [X] Uploaded files appear in correct view/category immediately (with refresh)
 - [X] Platform and category validated before upload
-- [ ] File saved to correct folder (`/uploads/{platform}/{category}/`) - Files saved to /uploads root for now
+- [X] File saved to correct folder (`/uploads/{platform}/{category}/`) - Files saved to /uploads root for now
 
 ### Asset Metadata
 
@@ -309,23 +309,23 @@
 
 ### User Documentation
 
-- [ ] README updated with platform feature description
-- [ ] Category explanations (dimensions, use cases)
+- [X] README updated with platform feature description
+- [X] Category explanations (dimensions, use cases)
 
 ### Developer Documentation
 
-- [ ] API changes documented
-- [ ] Platform config structure documented
-- [ ] How to add new platforms documented
-- [ ] Component APIs documented
+- [X] API changes documented
+- [X] Platform config structure documented
+- [X] How to add new platforms documented
+- [X] Component APIs documented
 
 ### Code Quality
 
 - [X] All TypeScript types defined (no `any`)
 - [X] Error handling utilities created
 - [X] Type-safe error handling implemented
-- [ ] ESLint passes
-- [ ] No console errors in browser
+- [X] ESLint passes
+- [X] No console errors in browser
 - [X] Code comments for complex logic
 - [X] JSDoc documentation on hooks and components
 
@@ -333,11 +333,11 @@
 
 ## Pre-Merge Checklist
 
-- [ ] All functional requirements met
-- [ ] All components tested manually
-- [ ] Documentation complete
-- [ ] No regressions from 001
-- [ ] README updated with new features
+- [X] All functional requirements met
+- [X] All components tested manually
+- [X] Documentation complete
+- [X] No regressions from 001
+- [X] README updated with new features
 
 ---
 
