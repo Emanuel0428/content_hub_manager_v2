@@ -4,6 +4,8 @@
  * In production, this would integrate with your auth provider (OAuth2, JWT, etc.)
  */
 
+const { log } = require('./observability')
+
 /**
  * Simple auth stub: checks for Authorization header
  * For MVP/dev, accepts any valid Bearer token
@@ -94,13 +96,13 @@ function requireRole(...allowedRoles) {
  */
 function registerAuth(app, { enableAuth = false } = {}) {
   if (!enableAuth) {
-    console.log('[Auth] Auth middleware disabled (dev mode). To enable: set ENABLE_AUTH=true')
+    log('warn', '⚠️  Auth middleware disabled (dev mode). To enable: set ENABLE_AUTH=true')
     return
   }
   
   // Add auth guard as a preHandler hook
   app.addHook('preHandler', authGuard)
-  console.log('[Auth] Auth middleware enabled')
+  log('info', '🔒 Auth middleware enabled')
 }
 
 module.exports = {

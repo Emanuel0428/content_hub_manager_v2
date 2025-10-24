@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePlatformCategories } from '../../hooks/usePlatformCategories';
+import { useAssetFilter } from '../../hooks/useAssetFilter';
 
 interface TikTokViewProps {
   onError?: (error: string) => void;
@@ -7,6 +8,13 @@ interface TikTokViewProps {
 
 export default function TikTokView({ onError }: TikTokViewProps) {
   const categories = usePlatformCategories('tiktok');
+  const { assets, loading, error } = useAssetFilter({ platform: 'tiktok' });
+
+  React.useEffect(() => {
+    if (error && onError) {
+      onError(error);
+    }
+  }, [error, onError]);
 
   return (
     <div className="space-y-6">
@@ -20,33 +28,44 @@ export default function TikTokView({ onError }: TikTokViewProps) {
             TikTok Content
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Manage your TikTok video assets
+            {loading ? (
+              'Loading assets...'
+            ) : (
+              `${assets.length} total asset${assets.length !== 1 ? 's' : ''}`
+            )}
           </p>
         </div>
       </div>
 
       {/* Categories Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {categories.map((category) => (
-          <div
-            key={category.id}
-            className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 
-                       bg-white dark:bg-slate-800 hover:border-black 
-                       dark:hover:border-[#00F2EA] transition-colors cursor-pointer"
-          >
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-              {category.name}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-              {category.description}
-            </p>
-            {category.dimensions && (
-              <p className="text-xs font-mono text-black dark:text-[#00F2EA]">
-                {category.dimensions}
+        {categories.map((category) => {
+          const categoryAssets = assets.filter(a => a.category === category.id);
+          
+          return (
+            <div
+              key={category.id}
+              className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 
+                         bg-white dark:bg-slate-800 hover:border-black 
+                         dark:hover:border-[#00F2EA] transition-colors cursor-pointer"
+            >
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
+                {category.name}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                {category.description}
               </p>
-            )}
-          </div>
-        ))}
+              {category.dimensions && (
+                <p className="text-xs font-mono text-black dark:text-[#00F2EA] mb-2">
+                  {category.dimensions}
+                </p>
+              )}
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                {loading ? '...' : `${categoryAssets.length} asset${categoryAssets.length !== 1 ? 's' : ''}`}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* TODO: Add CategorySection components for each category */}
@@ -57,3 +76,4 @@ export default function TikTokView({ onError }: TikTokViewProps) {
     </div>
   );
 }
+

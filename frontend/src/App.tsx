@@ -4,7 +4,6 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import UploadWidget from './components/UploadWidget'
 import AssetList from './components/AssetList'
 import ErrorToast from './components/ErrorToast'
-import EventsViewer from './components/EventsViewer'
 import FolderManager from './components/FolderManager'
 import PlatformNavigator from './components/platform/PlatformNavigator'
 import PlatformViewContainer from './components/platform/PlatformViewContainer'
@@ -74,10 +73,6 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Events Viewer */}
-        <div className="mt-10">
-          <EventsViewer />
-        </div>
       </main>
 
       {/* Error Toast */}

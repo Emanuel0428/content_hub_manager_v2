@@ -22,18 +22,27 @@ const metrics = {
  */
 function log(level, message, meta = {}) {
   const timestamp = new Date().toISOString()
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...meta
+  
+  // Console output (human-readable format)
+  const colors = { 
+    info: '\x1b[36m',    // Cyan
+    warn: '\x1b[33m',    // Yellow
+    error: '\x1b[31m',   // Red
+    reset: '\x1b[0m'     // Reset
   }
   
-  const logLine = JSON.stringify(logEntry)
+  const levelColor = colors[level] || ''
+  const resetColor = colors.reset
+  const levelUpper = level.toUpperCase().padEnd(5)
   
-  // Console output (color-coded)
-  const colors = { info: '\x1b[36m', warn: '\x1b[33m', error: '\x1b[31m', reset: '\x1b[0m' }
-  console.log(`${colors[level] || ''}[${timestamp}] ${level.toUpperCase()}: ${message}${colors.reset}`, meta.requestId ? `(${meta.requestId})` : '')
+  // Build readable log message
+  let logMessage = `${levelColor}[${timestamp}] ${levelUpper}${resetColor} ${message}`
+
+  /*if (meta.requestId) {
+    logMessage += ` ${colors.info}(${meta.requestId})${resetColor}`
+  }*/
+  
+  // console.log(logMessage)
 }
 
 /**
@@ -45,12 +54,9 @@ async function preHandler(request, reply) {
   
   metrics.requests++
   
-  log('info', `${request.method} ${request.url}`, {
-    requestId: request.id,
-    method: request.method,
-    path: request.url,
-    userAgent: request.headers['user-agent']
-  })
+  /*log('info', `→ ${request.method} ${request.url}`, {
+    requestId: request.id
+  })*/
 }
 
 /**
@@ -81,13 +87,11 @@ async function onResponse(request, reply) {
   metrics.totalResponseTime += duration
   
   const logLevel = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info'
-  log(logLevel, `${request.method} ${request.url} → ${statusCode}`, {
-    requestId: request.id,
-    statusCode,
-    duration: `${duration}ms`,
-    method: request.method,
-    path: request.url
-  })
+  const statusIcon = statusCode < 400 ? '✓' : '✗'
+  
+  /*log(logLevel, `${statusIcon} ${request.method} ${request.url.split('?')[0]} → ${statusCode} (${duration}ms)`, {
+    requestId: request.id
+  })*/
 }
 
 /**
@@ -130,8 +134,8 @@ function registerObservability(app) {
       timestamp: new Date().toISOString()
     })
   })
-  
-  log('info', 'Observability middleware registered')
+
+  // log('info', '✓ Observability middleware registered')
 }
 
 /**

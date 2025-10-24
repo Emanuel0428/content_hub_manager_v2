@@ -1,61 +1,65 @@
 import { useState, useEffect } from 'react';
-import type { Asset, AssetFilterParams } from '../types/asset';
+import { listAssets, type Asset } from '../services/api';
 import type { Platform } from '../types/platform';
 
+export interface AssetFilterParams {
+  platform?: Platform;
+  category?: string;
+  resolution?: string;
+}
+
 /**
- * Custom hook to filter assets by platform and/or category
- * Can be extended to support additional filters
+ * Custom hook to fetch and filter assets by platform and/or category
+ * Fetches data from API with server-side filtering
  */
-export function useAssetFilter(
-  assets: Asset[],
-  filters: AssetFilterParams
-) {
-  const [filteredAssets, setFilteredAssets] = useState<Asset[]>([]);
+export function useAssetFilter(filters: AssetFilterParams = {}) {
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let result = [...assets];
+    const fetchAssets = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const response = await listAssets(filters);
+        setAssets(response.data);
+      } catch (err) {
+        console.error('Failed to fetch assets:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch assets');
+        setAssets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Filter by platform
-    if (filters.platform && filters.platform !== 'all') {
-      result = result.filter(
-        (asset) => asset.platform === filters.platform || asset.platform === 'all'
-      );
-    }
+    fetchAssets();
+  }, [filters.platform, filters.category, filters.resolution]);
 
-    // Filter by category
-    if (filters.category) {
-      result = result.filter((asset) => asset.category === filters.category);
-    }
-
-    // Filter by folder
-    if (filters.folderId) {
-      result = result.filter((asset) => asset.folderId === filters.folderId);
-    }
-
-    // Search by name
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      result = result.filter((asset) =>
-        asset.name.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Sort
-    if (filters.sortBy) {
-      result.sort((a, b) => {
-        const aVal = a[filters.sortBy!];
-        const bVal = b[filters.sortBy!];
+  return {
+    assets,
+    loading,
+    error,
+    refetch: () => {
+      // Trigger re-fetch by forcing effect
+      const fetchAssets = async () => {
+        setLoading(true);
+        setError(null);
         
-        let comparison = 0;
-        if (aVal < bVal) comparison = -1;
-        if (aVal > bVal) comparison = 1;
-
-        return filters.sortOrder === 'desc' ? -comparison : comparison;
-      });
+        try {
+          const response = await listAssets(filters);
+          setAssets(response.data);
+        } catch (err) {
+          console.error('Failed to fetch assets:', err);
+          setError(err instanceof Error ? err.message : 'Failed to fetch assets');
+          setAssets([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchAssets();
     }
-
-    setFilteredAssets(result);
-  }, [assets, filters]);
-
-  return filteredAssets;
+  };
 }
+
