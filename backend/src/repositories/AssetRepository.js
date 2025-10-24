@@ -18,7 +18,7 @@ class AssetRepository extends BaseRepository {
     
     let query = `SELECT a.id, a.title, a.platform, a.category, a.resolution, 
                   a.width, a.height, a.tags, a.description, a.file_size, a.mime_type,
-                  a.folder_id, a.created_at,
+                  a.created_at,
                   v.id as version_id, v.path as version_path 
                   FROM assets a 
                   LEFT JOIN asset_versions v ON v.asset_id = a.id`
@@ -121,13 +121,6 @@ class AssetRepository extends BaseRepository {
     }
     
     return this.update(id, updateData)
-  }
-
-  /**
-   * Move asset to folder
-   */
-  async moveToFolder(id, folderId) {
-    return this.update(id, { folder_id: folderId || null })
   }
 
   /**

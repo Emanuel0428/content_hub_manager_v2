@@ -1,17 +1,59 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Upload, Loader } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
+import { usePlatform } from '../hooks/usePlatform'
+import { getCategoriesForPlatform } from '../constants/platforms'
+import { getErrorMessage } from '../utils/errorHandling'
+import type { Platform } from '../types/platform'
 
-export default function UploadWidget({ onError }: { onError: (msg: string) => void }) {
+interface UploadWidgetProps {
+  onError: (msg: string) => void
+  onUploadComplete?: () => void
+}
+
+export default function UploadWidget({ onError, onUploadComplete }: UploadWidgetProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [platform, setPlatform] = useState('demo')
   const { darkMode } = useTheme()
+  const { activePlatform } = usePlatform()
+  
+  // Use active platform from context, but allow manual override
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(activePlatform)
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  
+  // Get categories for selected platform
+  const categories = getCategoriesForPlatform(selectedPlatform)
+  
+  // Update selected platform when active platform changes
+  useEffect(() => {
+    if (activePlatform !== 'all') {
+      setSelectedPlatform(activePlatform)
+      setSelectedCategory('') // Reset category when platform changes
+    }
+  }, [activePlatform])
+  
+  // Auto-select first category when platform changes
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0].id)
+    }
+  }, [categories, selectedCategory])
 
   const handleFile = async (file: File) => {
     if (!file) return
+    
+    // Validate platform and category
+    if (selectedPlatform === 'all') {
+      onError('Please select a specific platform before uploading')
+      return
+    }
+    
+    if (!selectedCategory) {
+      onError('Please select a category before uploading')
+      return
+    }
     
     try {
       setIsLoading(true)
@@ -29,19 +71,25 @@ export default function UploadWidget({ onError }: { onError: (msg: string) => vo
         }
       })
 
-      // Create asset
+      // Create asset with platform and category metadata
       await axios.post('http://localhost:3001/api/assets', {
         title: file.name,
-        platform: platform,
-        path: uploadRes.data.path
+        platform: selectedPlatform,
+        category: selectedCategory,
+        path: uploadRes.data.path,
+        file_size: file.size,
+        mime_type: file.type
       })
 
       setProgress(0)
       setIsLoading(false)
-    } catch (err: any) {
+      
+      // Notify parent component
+      onUploadComplete?.()
+    } catch (err: unknown) {
       setIsLoading(false)
       console.error('Upload error:', err)
-      onError(err.response?.data?.message || err.message || 'Upload failed')
+      onError(getErrorMessage(err))
     }
   }
 
@@ -91,21 +139,52 @@ export default function UploadWidget({ onError }: { onError: (msg: string) => vo
         <label className={`block text-sm font-semibold mb-2 ${
           darkMode ? 'text-slate-300' : 'text-slate-700'
         }`}>
-          Platform:
+          Platform: <span className="text-brand-500">*</span>
         </label>
         <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value)}
+          value={selectedPlatform}
+          onChange={(e) => {
+            setSelectedPlatform(e.target.value as Platform)
+            setSelectedCategory('') // Reset category on platform change
+          }}
           className={selectStyles}
           disabled={isLoading}
         >
-          <option value="demo">Demo</option>
+          {activePlatform === 'all' && <option value="all">Select Platform...</option>}
           <option value="twitch">Twitch</option>
-          <option value="tiktok">TikTok</option>
           <option value="youtube">YouTube</option>
-          <option value="instagram">Instagram</option>
+          <option value="tiktok">TikTok</option>
         </select>
       </div>
+
+      {/* Category Selector */}
+      {selectedPlatform !== 'all' && categories.length > 0 && (
+        <div className="mb-4">
+          <label className={`block text-sm font-semibold mb-2 ${
+            darkMode ? 'text-slate-300' : 'text-slate-700'
+          }`}>
+            Category: <span className="text-brand-500">*</span>
+          </label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className={selectStyles}
+            disabled={isLoading}
+          >
+            <option value="">Select Category...</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name} {cat.dimensions && `(${cat.dimensions})`}
+              </option>
+            ))}
+          </select>
+          {selectedCategory && (
+            <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              {categories.find(c => c.id === selectedCategory)?.description}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Drop Zone */}
       <div

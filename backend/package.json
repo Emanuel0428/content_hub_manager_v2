@@ -1,12 +1,12 @@
 {
   "name": "chm-backend-demo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "tus": "node src/tusServer.js",
-    "migrate": "node src/migrate.js"
+    "init-db": "node src/initDb.js",
+    "tus": "node src/tusServer.js"
   },
   "dependencies": {
     "fastify": "^4.29.0",

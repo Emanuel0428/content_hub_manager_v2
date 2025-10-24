@@ -4,7 +4,6 @@
  */
 
 const AssetRepository = require('./AssetRepository')
-const FolderRepository = require('./FolderRepository')
 const ChecklistRepository = require('./ChecklistRepository')
 const EventRepository = require('./EventRepository')
 
@@ -14,7 +13,6 @@ const EventRepository = require('./EventRepository')
 function createRepositories(db) {
   return {
     assets: new AssetRepository(db),
-    folders: new FolderRepository(db),
     checklists: new ChecklistRepository(db),
     events: new EventRepository(db)
   }
@@ -22,7 +20,6 @@ function createRepositories(db) {
 
 module.exports = {
   AssetRepository,
-  FolderRepository,
   ChecklistRepository,
   EventRepository,
   createRepositories

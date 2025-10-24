@@ -16,7 +16,6 @@ export interface Asset {
   description?: string
   file_size?: number
   mime_type?: string
-  folder_id?: number
   created_at: string
   version_id?: number
   version_path?: string
@@ -100,11 +99,6 @@ export async function updateAsset(id: number, payload: UpdateAssetPayload) {
   return r.data
 }
 
-export async function moveAsset(id: number, folderId: number | null) {
-  const r = await api.put<{ ok: boolean }>(`/api/assets/${id}/move`, { folder_id: folderId })
-  return r.data
-}
-
 // Statistics API
 export async function getPlatformStats() {
   const r = await api.get<{ data: PlatformStats[] }>('/api/stats/platforms')
@@ -116,9 +110,20 @@ export async function getCategoryStats(platform: string) {
   return r.data
 }
 
+/**
+ * Event interface for audit log
+ */
+export interface Event {
+  id: number
+  asset_id: number
+  event_type: string
+  event_data?: Record<string, unknown>
+  created_at: string
+}
+
 // Events API
 export async function listEvents() {
-  const r = await api.get<{ data: any[] }>('/api/events')
+  const r = await api.get<{ data: Event[] }>('/api/events')
   return r.data
 }
 
@@ -129,32 +134,6 @@ export async function uploadFile(file: File) {
   const r = await api.post<{ path: string }>('/api/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
-  return r.data
-}
-
-// Folders API
-export async function listFolders() {
-  const r = await api.get<{ data: any[] }>('/api/folders')
-  return r.data
-}
-
-export async function createFolder(name: string) {
-  const r = await api.post<{ id: number }>('/api/folders', { name })
-  return r.data
-}
-
-export async function getFolder(id: number) {
-  const r = await api.get<{ data: any }>(`/api/folders/${id}`)
-  return r.data
-}
-
-export async function updateFolder(id: number, name: string) {
-  const r = await api.put<{ ok: boolean }>(`/api/folders/${id}`, { name })
-  return r.data
-}
-
-export async function deleteFolder(id: number) {
-  const r = await api.delete<{ ok: boolean }>(`/api/folders/${id}`)
   return r.data
 }
 

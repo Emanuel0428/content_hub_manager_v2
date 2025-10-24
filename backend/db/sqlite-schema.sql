@@ -1,15 +1,9 @@
 BEGIN TRANSACTION;
 
-CREATE TABLE IF NOT EXISTS folders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS assets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
-  platform TEXT,
+  platform TEXT NOT NULL,
   category TEXT,
   resolution TEXT,
   width INTEGER,
@@ -18,9 +12,7 @@ CREATE TABLE IF NOT EXISTS assets (
   description TEXT,
   file_size INTEGER,
   mime_type TEXT,
-  folder_id INTEGER,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE SET NULL
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS asset_versions (

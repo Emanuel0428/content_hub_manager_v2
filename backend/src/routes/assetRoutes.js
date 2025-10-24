@@ -113,22 +113,6 @@ function registerAssetRoutes(app, repositories) {
     }
   })
 
-  // Move asset to folder
-  app.put('/api/assets/:id/move', async (req, reply) => {
-    try {
-      const { id } = req.params
-      const { folder_id } = req.body || {}
-
-      await assets.moveToFolder(id, folder_id)
-
-      eventService.emit('asset.moved', { assetId: id, folder_id })
-      reply.send({ ok: true })
-    } catch (err) {
-      const mapped = mapError(err)
-      reply.status(mapped.status || 500).send({ error: mapped.message })
-    }
-  })
-
   // Search assets
   app.get('/api/search', async (req, reply) => {
     try {

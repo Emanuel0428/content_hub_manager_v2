@@ -1,14 +1,45 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePlatformCategories } from '../../hooks/usePlatformCategories';
 import { useAssetFilter } from '../../hooks/useAssetFilter';
+import { useTheme } from '../../contexts/ThemeContext';
+import CategorySection from './CategorySection';
+import FilterBar from './FilterBar';
 
 interface YouTubeViewProps {
   onError?: (error: string) => void;
 }
 
+const YOUTUBE_COLOR = '#FF0000';
+
 export default function YouTubeView({ onError }: YouTubeViewProps) {
   const categories = usePlatformCategories('youtube');
+  const { darkMode } = useTheme();
   const { assets, loading, error } = useAssetFilter({ platform: 'youtube' });
+
+  // Filter state
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleClearFilters = () => {
+    setSelectedCategory(undefined);
+    setSearchQuery('');
+  };
+
+  // Apply search filter
+  const filteredAssets = useMemo(() => {
+    if (!searchQuery.trim()) return assets;
+    const query = searchQuery.toLowerCase();
+    return assets.filter(asset => {
+      const titleMatch = asset.title?.toLowerCase().includes(query);
+      const tagsMatch = asset.tags?.some(tag => tag.toLowerCase().includes(query));
+      return titleMatch || tagsMatch;
+    });
+  }, [assets, searchQuery]);
+
+  // Filter categories to show
+  const categoriesToShow = selectedCategory 
+    ? categories.filter(c => c.id === selectedCategory)
+    : categories;
 
   React.useEffect(() => {
     if (error && onError) {
@@ -17,17 +48,21 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
   }, [error, onError]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-[#FF0000] flex items-center justify-center text-2xl">
-          🎬
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-[#FF0000] flex items-center justify-center p-3 shadow-lg">
+          <img 
+            src="/Youtube_logo.svg" 
+            alt="YouTube logo"
+            className="w-full h-full object-contain brightness-0 invert"
+          />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h2 className={`text-3xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             YouTube Content
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-900'} mt-1`}>
             {loading ? (
               'Loading assets...'
             ) : (
@@ -37,41 +72,28 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
         </div>
       </div>
 
-      {/* Categories Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {categories.map((category) => {
-          const categoryAssets = assets.filter(a => a.category === category.id);
-          
-          return (
-            <div
-              key={category.id}
-              className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 
-                         bg-white dark:bg-slate-800 hover:border-[#FF0000] 
-                         dark:hover:border-[#FF0000] transition-colors cursor-pointer"
-            >
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                {category.name}
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                {category.description}
-              </p>
-              {category.dimensions && (
-                <p className="text-xs font-mono text-[#FF0000] mb-2">
-                  {category.dimensions}
-                </p>
-              )}
-              <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                {loading ? '...' : `${categoryAssets.length} asset${categoryAssets.length !== 1 ? 's' : ''}`}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Filters */}
+      <FilterBar
+        platform="youtube"
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onClearFilters={handleClearFilters}
+      />
 
-      {/* TODO: Add CategorySection components for each category */}
-      <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-        <p className="text-sm">Category content will be displayed here</p>
-        <p className="text-xs mt-1">Select a category above to view assets</p>
+      {/* Category Sections */}
+      <div className="space-y-8">
+        {categoriesToShow.map((category) => (
+          <CategorySection
+            key={category.id}
+            category={category}
+            assets={filteredAssets}
+            loading={loading}
+            platformColor={YOUTUBE_COLOR}
+            onError={onError}
+          />
+        ))}
       </div>
     </div>
   );

@@ -4,10 +4,10 @@
  */
 
 const registerAssetRoutes = require('./assetRoutes')
-const registerFolderRoutes = require('./folderRoutes')
 const registerChecklistRoutes = require('./checklistRoutes')
 const registerEventRoutes = require('./eventRoutes')
 const registerUploadRoutes = require('./uploadRoutes')
+const registerPlatformRoutes = require('./platformRoutes')
 
 /**
  * Register all application routes
@@ -18,10 +18,10 @@ function registerRoutes(app, repositories) {
 
   // Register domain-specific routes
   registerAssetRoutes(app, repositories)
-  registerFolderRoutes(app, repositories)
   registerChecklistRoutes(app, repositories)
   registerEventRoutes(app, repositories)
   registerUploadRoutes(app)
+  registerPlatformRoutes(app)
 }
 
 module.exports = registerRoutes
