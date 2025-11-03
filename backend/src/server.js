@@ -52,7 +52,7 @@ app.register(fastifyStatic, {
 const start = async () => {
   try {
     await app.listen({ port: 3001, host: '0.0.0.0' });
-    log('info', '🚀 Backend server listening on http://localhost:3001');
+    log('info', 'Backend server listening on http://localhost:3001');
   } catch (e) {
     logError(e, { context: 'Server startup' });
     process.exit(1);

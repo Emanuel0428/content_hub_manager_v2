@@ -36,9 +36,6 @@
 
 ### File Storage
 
-- [ ] Create `/uploads/twitch/` folder structure (OPTIONAL - not needed for MVP)
-- [ ] Create `/uploads/youtube/` folder structure (OPTIONAL)
-- [ ] Create `/uploads/tiktok/` folder structure (OPTIONAL)
 - [X] Upload saves files correctly (to /uploads root)
 - [X] Storage paths saved correctly in database
 

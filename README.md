@@ -7,7 +7,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 A full-stack web application for organizing, versioning, and managing digital assets across streaming platforms. Features real-time search, smart filtering, resumable uploads, and comprehensive metadata management.
 
@@ -56,7 +56,7 @@ This project was built using **[Spec-kit](https://github.com/spec-kit/spec-kit)*
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js (LTS) • npm/yarn
@@ -90,7 +90,7 @@ cd frontend && npm run build
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Tech Stack
 | Layer | Technology | Purpose |
@@ -157,7 +157,7 @@ Toggle sun/moon icon in header. Preference saved to localStorage.
 
 ---
 
-## 🔌 API Reference
+## API Reference
 
 ### Core Endpoints
 ```
@@ -187,7 +187,7 @@ GET    /api/health              # Health check
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Manual Testing Flow
 ```bash
@@ -216,7 +216,7 @@ cd frontend && npm test
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Database Reset:**
 ```bash
@@ -251,7 +251,7 @@ app.register(cors, { origin: 'http://localhost:5173' })
 
 ---
 
-## 🔮 Roadmap
+## Roadmap
 
 ### Planned Enhancements
 - [ ] Bulk upload with parallel processing
@@ -288,7 +288,7 @@ Each spec includes:
 
 ---
 
-## 👥 Contributing
+## Contributing
 
 1. Fork repository
 2. Create feature branch: `git checkout -b 00X-feature-name`
@@ -305,13 +305,13 @@ Each spec includes:
 
 ---
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Spec-kit** methodology for structured development
 - **Fastify** team for high-performance Node.js framework
@@ -320,4 +320,4 @@ MIT License - See LICENSE file for details
 
 ---
 
-**Built with precision for content creators** 🎨✨
+**Built with precision for content creators** 
