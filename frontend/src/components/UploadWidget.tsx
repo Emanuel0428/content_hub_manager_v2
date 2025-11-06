@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import { Upload, Loader } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { usePlatform } from '../hooks/usePlatform'
+import { useAuth } from '../contexts/AuthContext'
 import { getCategoriesForPlatform } from '../constants/platforms'
 import { getErrorMessage } from '../utils/errorHandling'
+import { createAsset, uploadFile } from '../services/api'
 import type { Platform } from '../types/platform'
 
 interface UploadWidgetProps {
@@ -18,6 +19,7 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
   const [progress, setProgress] = useState(0)
   const { darkMode } = useTheme()
   const { activePlatform } = usePlatform()
+  const { user } = useAuth()
   
   // Use active platform from context, but allow manual override
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(activePlatform)
@@ -44,6 +46,11 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
   const handleFile = async (file: File) => {
     if (!file) return
     
+    if (!user) {
+      onError('Please log in before uploading')
+      return
+    }
+    
     // Validate platform and category
     if (selectedPlatform === 'all') {
       onError('Please select a specific platform before uploading')
@@ -62,24 +69,27 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
       const form = new FormData()
       form.append('file', file, file.name)
       
-      // Upload file
-      const uploadRes = await axios.post('http://localhost:3001/api/upload', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          const percent = Math.round((e.loaded * 100) / (e.total || 1))
-          setProgress(percent)
-        }
+      console.log('📤 Uploading file to backend:', file.name)
+      
+      // Upload file to Supabase Storage using configured api instance
+      const uploadRes = await uploadFile(file)
+      console.log('✅ File uploaded successfully:', uploadRes)
+
+      // Create asset metadata in Supabase database
+      const assetResult = await createAsset({
+        name: file.name,
+        platform_origin: selectedPlatform,
+        type: 'file',
+        metadata: {
+          category: selectedCategory,
+          originalMimeType: file.type
+        },
+        storagePath: uploadRes.path,
+        size_bytes: file.size,
+        userId: user.id
       })
 
-      // Create asset with platform and category metadata
-      await axios.post('http://localhost:3001/api/assets', {
-        title: file.name,
-        platform: selectedPlatform,
-        category: selectedCategory,
-        path: uploadRes.data.path,
-        file_size: file.size,
-        mime_type: file.type
-      })
+      console.log('✅ Asset created:', assetResult)
 
       setProgress(0)
       setIsLoading(false)
@@ -88,7 +98,7 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
       onUploadComplete?.()
     } catch (err: unknown) {
       setIsLoading(false)
-      console.error('Upload error:', err)
+      console.error('❌ Upload error:', err)
       onError(getErrorMessage(err))
     }
   }

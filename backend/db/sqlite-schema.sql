@@ -40,6 +40,36 @@ CREATE TABLE IF NOT EXISTS events (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Migration tracking for Supabase migration
+CREATE TABLE IF NOT EXISTS migration_jobs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'completed', 'failed')),
+  total_assets INTEGER DEFAULT 0,
+  processed_assets INTEGER DEFAULT 0,
+  failed_assets INTEGER DEFAULT 0,
+  error_log TEXT,
+  metadata TEXT, -- JSON metadata for migration details
+  started_at DATETIME,
+  completed_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Users table for Supabase auth integration (mirrors Supabase auth.users)
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY, -- UUID from Supabase auth.users.id
+  email TEXT UNIQUE NOT NULL,
+  display_name TEXT,
+  avatar_url TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Update assets table to support Supabase storage paths
+ALTER TABLE assets ADD COLUMN storage_path TEXT; -- Supabase Storage path
+ALTER TABLE assets ADD COLUMN preview_url TEXT;  -- CDN/preview URL
+ALTER TABLE assets ADD COLUMN user_id TEXT REFERENCES users(id); -- Asset owner
+
 -- FTS for search with enhanced fields
 CREATE VIRTUAL TABLE IF NOT EXISTS assets_fts USING fts5(
   title, 

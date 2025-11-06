@@ -1,46 +1,20 @@
 import React, { useState } from 'react';
-import { Image, Video, Music, File, Loader } from 'lucide-react';
+import { Image, Video, Music, File, Loader, X } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import AssetPreview from '../AssetPreview';
 import type { Asset } from '../../services/api';
 import type { CategoryConfig } from '../../types/platform';
 
-/**
- * Props for CategorySection component
- */
+
 interface CategorySectionProps {
-  /** Category configuration with name, description, and dimensions */
   category: CategoryConfig;
-  /** Array of assets to display (will be filtered by category) */
   assets: Asset[];
-  /** Whether assets are currently loading */
   loading?: boolean;
-  /** Platform color for styling accent elements */
   platformColor: string;
-  /** Error callback for handling errors in child components */
   onError?: (error: string) => void;
 }
 
-/**
- * CategorySection Component
- * 
- * Displays a category of assets with:
- * - Category header with name, description, and recommended dimensions
- * - Responsive grid of asset cards (1-4 columns based on screen size)
- * - Empty state when no assets in category
- * - Loading state with spinner
- * - Modal preview when asset is clicked
- * 
- * @example
- * ```tsx
- * <CategorySection
- *   category={thumbnailsCategory}
- *   assets={allAssets}
- *   platformColor="#9146FF"
- *   onError={handleError}
- * />
- * ```
- */
+const urlSupabase = `${(import.meta as any).env.VITE_SUPABASE_URL}/storage/v1/object/public/Assets/`;
+
 export default function CategorySection({
   category,
   assets,
@@ -49,10 +23,13 @@ export default function CategorySection({
   onError,
 }: CategorySectionProps) {
   const { darkMode } = useTheme();
-  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
-  // Filter assets for this category
-  const categoryAssets = assets.filter(asset => asset.category === category.id);
+  // Filter assets for this category by checking metadata.category
+  const categoryAssets = assets.filter(asset => {
+    const assetCategory = asset.metadata?.category;
+    return assetCategory === category.id;
+  });
 
   // Get icon for asset type
   const getAssetIcon = (mimeType?: string) => {
@@ -144,20 +121,42 @@ export default function CategorySection({
               }}
             >
               {/* Thumbnail/Preview */}
-              <div className={`aspect-video relative overflow-hidden ${
+              <div className={`aspect-video relative overflow-hidden flex items-center justify-center ${
                 darkMode ? 'bg-slate-900' : 'bg-slate-100'
               }`}>
-                {asset.version_path && asset.mime_type?.startsWith('image/') ? (
-                  <img
-                    src={`http://localhost:3001${asset.version_path}`}
-                    alt={asset.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    {getAssetIcon(asset.mime_type)}
-                  </div>
-                )}
+                {(() => {
+                  // Debug logging
+                  console.log('Asset data:', asset);
+                  console.log('Asset versions:', asset.asset_versions);
+                  console.log('Storage path:', asset.asset_versions?.[0]?.storage_path);
+                  console.log('MIME type:', asset.metadata?.originalMimeType);
+                  
+                  const storagePath = asset.asset_versions?.[0]?.storage_path;
+                  const imageUrl = storagePath ? `${urlSupabase}${storagePath}` : null;
+                  
+                  if (asset.metadata?.originalMimeType?.startsWith('image/') && imageUrl) {
+                    return (
+                      <img
+                        src={imageUrl}
+                        alt={asset.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Image failed to load:', imageUrl);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', imageUrl);
+                        }}
+                      />
+                    );
+                  } else {
+                    return (
+                      <div className="text-slate-400">
+                        {getAssetIcon(asset.metadata?.originalMimeType)}
+                      </div>
+                    );
+                  }
+                })()}
                 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -170,42 +169,19 @@ export default function CategorySection({
                 <h4 className={`font-medium text-sm truncate mb-1 ${
                   darkMode ? 'text-white' : 'text-slate-900'
                 }`}>
-                  {asset.title}
+                  {asset.name}
                 </h4>
                 
                 <div className="flex items-center justify-between text-xs">
                   <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                    {formatFileSize(asset.file_size)}
+                    {formatFileSize(asset.size_bytes)}
                   </span>
-                  {asset.resolution && (
+                  {category.dimensions && (
                     <span className="font-mono" style={{ color: platformColor }}>
-                      {asset.resolution}
+                      {category.dimensions}
                     </span>
                   )}
                 </div>
-
-                {/* Tags */}
-                {asset.tags && asset.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {asset.tags.slice(0, 2).map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          darkMode
-                            ? 'bg-slate-700 text-slate-300'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {asset.tags.length > 2 && (
-                      <span className="text-xs text-slate-400">
-                        +{asset.tags.length - 2}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           ))}
@@ -213,7 +189,7 @@ export default function CategorySection({
       )}
 
       {/* Asset Preview Modal */}
-      {selectedAssetId && (
+      {selectedAssetId && categoryAssets.find(a => a.id === selectedAssetId) && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div 
             className={`max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl ${
@@ -225,27 +201,73 @@ export default function CategorySection({
               borderColor: darkMode ? '#334155' : '#e2e8f0'
             }}>
               <h3 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                Asset Details
+                {categoryAssets.find(a => a.id === selectedAssetId)?.name}
               </h3>
               <button
                 onClick={() => setSelectedAssetId(null)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`p-2 rounded-lg transition-colors ${
                   darkMode
-                    ? 'bg-slate-800 hover:bg-slate-700 text-white'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+                    ? 'hover:bg-slate-800 text-slate-300'
+                    : 'hover:bg-slate-100 text-slate-700'
                 }`}
               >
-                Close
+                <X size={20} />
               </button>
             </div>
             <div className="p-6">
-              <AssetPreview 
-                id={selectedAssetId} 
-                onError={(err) => {
-                  onError?.(err);
-                  setSelectedAssetId(null);
-                }}
-              />
+              {categoryAssets.find(a => a.id === selectedAssetId) && (() => {
+                const asset = categoryAssets.find(a => a.id === selectedAssetId)!;
+                return (
+                  <div className="space-y-4">
+                    {asset.asset_versions?.[0]?.storage_path && (
+                      <div className={`rounded-lg overflow-hidden ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                        {asset.metadata?.originalMimeType?.startsWith('image/') ? (
+                          <img
+                            src={`${urlSupabase}${asset.asset_versions[0].storage_path}`}
+                            alt={asset.name}
+                            className="w-full h-auto"
+                          />
+                        ) : (
+                          <div className="p-12 flex items-center justify-center">
+                            <div className="text-slate-400">
+                              {getAssetIcon(asset.metadata?.originalMimeType)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                        Asset Information
+                      </h4>
+                      <dl className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <dt className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Name:</dt>
+                          <dd className={darkMode ? 'text-slate-300' : 'text-slate-900'}>{asset.name}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Size:</dt>
+                          <dd className={darkMode ? 'text-slate-300' : 'text-slate-900'}>{formatFileSize(asset.size_bytes)}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Platform:</dt>
+                          <dd className={darkMode ? 'text-slate-300' : 'text-slate-900'}>{asset.platform_origin}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Category:</dt>
+                          <dd className={darkMode ? 'text-slate-300' : 'text-slate-900'}>{asset.metadata?.category}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Created:</dt>
+                          <dd className={darkMode ? 'text-slate-300' : 'text-slate-900'}>
+                            {new Date(asset.created_at).toLocaleDateString()}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

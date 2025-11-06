@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePlatformCategories } from '../../hooks/usePlatformCategories';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useAssetFilter } from '../../hooks/useAssetFilter';
 import CategorySection from './CategorySection';
 import FilterBar from './FilterBar';
@@ -13,7 +14,11 @@ const TWITCH_COLOR = '#9146FF';
 
 export default function TwitchView({ onError }: TwitchViewProps) {
   const categories = usePlatformCategories('twitch');
-  const { assets, loading, error } = useAssetFilter({ platform: 'twitch' });
+  const { user } = useAuth();
+  const { assets, loading, error } = useAssetFilter({ 
+    platform: 'twitch',
+    userId: user?.id 
+  });
   const { darkMode } = useTheme();
   
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
@@ -37,8 +42,7 @@ export default function TwitchView({ onError }: TwitchViewProps) {
     if (searchQuery && searchQuery.length > 0) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(asset => 
-        asset.title.toLowerCase().includes(query) ||
-        asset.tags?.some(tag => tag.toLowerCase().includes(query))
+        asset.name.toLowerCase().includes(query)
       );
     }
     

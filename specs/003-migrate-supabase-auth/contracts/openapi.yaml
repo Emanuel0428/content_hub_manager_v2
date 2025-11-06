@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Content Hub Manager - SupaBase Auth + Assets API
+  version: 0.1.0
+
+paths:
+  /auth/signup:
+    post:
+      summary: Create a new user (signup)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Created
+
+  /auth/login:
+    post:
+      summary: Login (returns session token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+
+  /assets:
+    get:
+      summary: List assets for authenticated user
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create an asset metadata entry (init upload)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                mime_type:
+                  type: string
+                size_bytes:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+
+  /assets/{id}/download:
+    get:
+      summary: Download an asset (or provide signed URL)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /migration/start:
+    post:
+      summary: Start migration job
+      responses:
+        '202':
+          description: Accepted
+
+  /migration/{jobId}:
+    get:
+      summary: Get migration job status
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
