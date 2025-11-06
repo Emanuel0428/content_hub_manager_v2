@@ -1,12 +1,11 @@
 {
-  "name": "chm-backend-demo",
+  "name": "chm-backend",
   "version": "0.2.0",
   "private": true,
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "tus": "node src/tusServer.js"
   },
   "dependencies": {
     "@fastify/cors": "^8.1.0",
