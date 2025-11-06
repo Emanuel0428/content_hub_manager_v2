@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { usePlatformCategories } from '../../hooks/usePlatformCategories';
 import { useAssetFilter } from '../../hooks/useAssetFilter';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import CategorySection from './CategorySection';
 import FilterBar from './FilterBar';
 
@@ -14,7 +15,11 @@ const YOUTUBE_COLOR = '#FF0000';
 export default function YouTubeView({ onError }: YouTubeViewProps) {
   const categories = usePlatformCategories('youtube');
   const { darkMode } = useTheme();
-  const { assets, loading, error } = useAssetFilter({ platform: 'youtube' });
+  const { user } = useAuth();
+  const { assets, loading, error, refetch } = useAssetFilter({ 
+    platform: 'youtube',
+    userId: user?.id 
+  });
 
   // Filter state
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
@@ -30,9 +35,8 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
     if (!searchQuery.trim()) return assets;
     const query = searchQuery.toLowerCase();
     return assets.filter(asset => {
-      const titleMatch = asset.title?.toLowerCase().includes(query);
-      const tagsMatch = asset.tags?.some(tag => tag.toLowerCase().includes(query));
-      return titleMatch || tagsMatch;
+      const nameMatch = asset.name?.toLowerCase().includes(query);
+      return nameMatch;
     });
   }, [assets, searchQuery]);
 
@@ -92,6 +96,7 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
             loading={loading}
             platformColor={YOUTUBE_COLOR}
             onError={onError}
+            onAssetUpdated={refetch}
           />
         ))}
       </div>

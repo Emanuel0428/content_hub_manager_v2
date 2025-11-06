@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { usePlatformCategories } from '../../hooks/usePlatformCategories';
 import { useAssetFilter } from '../../hooks/useAssetFilter';
+import { useAuth } from '../../contexts/AuthContext';
 import CategorySection from './CategorySection';
 import FilterBar from './FilterBar';
 
@@ -13,7 +14,11 @@ const TIKTOK_COLOR = '#000000';
 
 export default function TikTokView({ onError }: TikTokViewProps) {
   const categories = usePlatformCategories('tiktok');
-  const { assets, loading, error } = useAssetFilter({ platform: 'tiktok' });
+  const { user } = useAuth();
+  const { assets, loading, error, refetch } = useAssetFilter({ 
+    platform: 'tiktok',
+    userId: user?.id 
+  });
   const { darkMode } = useTheme();
 
   // Filter state
@@ -30,9 +35,8 @@ export default function TikTokView({ onError }: TikTokViewProps) {
     if (!searchQuery.trim()) return assets;
     const query = searchQuery.toLowerCase();
     return assets.filter(asset => {
-      const titleMatch = asset.title?.toLowerCase().includes(query);
-      const tagsMatch = asset.tags?.some(tag => tag.toLowerCase().includes(query));
-      return titleMatch || tagsMatch;
+      const nameMatch = asset.name?.toLowerCase().includes(query);
+      return nameMatch;
     });
   }, [assets, searchQuery]);
 
@@ -92,6 +96,7 @@ export default function TikTokView({ onError }: TikTokViewProps) {
             loading={loading}
             platformColor={TIKTOK_COLOR}
             onError={onError}
+            onAssetUpdated={refetch}
           />
         ))}
       </div>

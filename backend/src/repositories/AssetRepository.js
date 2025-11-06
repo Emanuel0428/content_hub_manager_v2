@@ -18,7 +18,7 @@ class AssetRepository extends BaseRepository {
     
     let query = `SELECT a.id, a.title, a.platform, a.category, a.resolution, 
                   a.width, a.height, a.tags, a.description, a.file_size, a.mime_type,
-                  a.created_at,
+                  a.storage_path, a.preview_url, a.user_id, a.created_at,
                   v.id as version_id, v.path as version_path 
                   FROM assets a 
                   LEFT JOIN asset_versions v ON v.asset_id = a.id`
@@ -174,6 +174,91 @@ class AssetRepository extends BaseRepository {
       ORDER BY asset_count DESC
     `
     return this.all(query, [platform])
+  }
+
+  /**
+   * Update asset with Supabase storage information
+   * @param {number} assetId - Asset ID
+   * @param {Object} storageData - Storage information
+   * @param {string} storageData.storage_path - Path in Supabase Storage
+   * @param {string} storageData.preview_url - Public preview URL
+   * @param {string} storageData.user_id - Owner user ID (optional)
+   * @returns {Promise<Object>} Updated asset
+   */
+  async updateStorageInfo(assetId, storageData) {
+    const { storage_path, preview_url, user_id } = storageData
+
+    const setParts = []
+    const values = []
+
+    if (storage_path !== undefined) {
+      setParts.push('storage_path = ?')
+      values.push(storage_path)
+    }
+
+    if (preview_url !== undefined) {
+      setParts.push('preview_url = ?')
+      values.push(preview_url)
+    }
+
+    if (user_id !== undefined) {
+      setParts.push('user_id = ?')
+      values.push(user_id)
+    }
+
+    if (setParts.length === 0) {
+      throw new Error('No storage data provided for update')
+    }
+
+    const query = `UPDATE assets SET ${setParts.join(', ')} WHERE id = ?`
+    values.push(assetId)
+
+    await this.run(query, values)
+    return this.findById(assetId)
+  }
+
+  /**
+   * Get assets ready for migration (no storage_path set)
+   * @param {number} limit - Maximum number of assets to return
+   * @returns {Promise<Array>} Assets ready for migration
+   */
+  async getAssetsForMigration(limit = 100) {
+    const query = `
+      SELECT id, title, platform, category, file_size, mime_type, created_at,
+             (SELECT path FROM asset_versions WHERE asset_id = assets.id LIMIT 1) as local_path
+      FROM assets 
+      WHERE storage_path IS NULL
+      ORDER BY created_at ASC
+      LIMIT ?
+    `
+    return this.all(query, [limit])
+  }
+
+  /**
+   * Get migrated assets count and statistics
+   * @returns {Promise<Object>} Migration statistics
+   */
+  async getMigrationStats() {
+    const query = `
+      SELECT 
+        COUNT(*) as total_assets,
+        COUNT(storage_path) as migrated_assets,
+        COUNT(*) - COUNT(storage_path) as pending_migration,
+        SUM(CASE WHEN storage_path IS NOT NULL THEN file_size ELSE 0 END) as migrated_size,
+        SUM(CASE WHEN storage_path IS NULL THEN file_size ELSE 0 END) as pending_size
+      FROM assets
+    `
+    return this.get(query)
+  }
+
+  /**
+   * Find assets by storage path (for rollback/verification)
+   * @param {string} storagePath - Supabase storage path
+   * @returns {Promise<Object|null>} Asset with matching storage path
+   */
+  async findByStoragePath(storagePath) {
+    const query = `SELECT * FROM assets WHERE storage_path = ?`
+    return this.get(query, [storagePath])
   }
 }
 

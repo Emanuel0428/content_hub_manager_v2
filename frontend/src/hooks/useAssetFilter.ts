@@ -12,6 +12,8 @@ export interface AssetFilterParams {
   category?: string;
   /** Resolution to filter by (e.g., '1920x1080') */
   resolution?: string;
+  /** User ID to filter by - only show assets from this user */
+  userId?: string;
 }
 
 /**
@@ -58,7 +60,7 @@ export function useAssetFilter(filters: AssetFilterParams = {}) {
     };
 
     fetchAssets();
-  }, [filters.platform, filters.category, filters.resolution]);
+  }, [filters.platform, filters.category, filters.resolution, filters.userId]);
 
   return {
     assets,

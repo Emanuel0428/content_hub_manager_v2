@@ -11,7 +11,16 @@ const metrics = {
   requests: 0,
   errors: 0,
   totalResponseTime: 0,
-  endpointMetrics: {}
+  endpointMetrics: {},
+  migration: {
+    totalJobs: 0,
+    runningJobs: 0,
+    completedJobs: 0,
+    failedJobs: 0,
+    totalAssetsProcessed: 0,
+    totalUploadedBytes: 0,
+    averageJobDuration: 0
+  }
 }
 
 /**
@@ -149,10 +158,168 @@ function logError(error, context = {}) {
   })
 }
 
+/**
+ * Log migration events with structured data
+ */
+function logMigrationEvent(event, data = {}) {
+  const migrationEvent = {
+    timestamp: new Date().toISOString(),
+    event,
+    ...data
+  }
+
+  // Update migration metrics
+  updateMigrationMetrics(event, data)
+
+  log('info', `Migration: ${event}`, migrationEvent)
+}
+
+/**
+ * Update migration metrics based on events
+ */
+function updateMigrationMetrics(event, data) {
+  switch (event) {
+    case 'job_started':
+      metrics.migration.totalJobs++
+      metrics.migration.runningJobs++
+      break
+      
+    case 'job_completed':
+      metrics.migration.runningJobs--
+      metrics.migration.completedJobs++
+      if (data.assetsProcessed) {
+        metrics.migration.totalAssetsProcessed += data.assetsProcessed
+      }
+      if (data.uploadedBytes) {
+        metrics.migration.totalUploadedBytes += data.uploadedBytes
+      }
+      if (data.duration) {
+        const totalCompleted = metrics.migration.completedJobs
+        const currentAvg = metrics.migration.averageJobDuration
+        metrics.migration.averageJobDuration = 
+          ((currentAvg * (totalCompleted - 1)) + data.duration) / totalCompleted
+      }
+      break
+      
+    case 'job_failed':
+      metrics.migration.runningJobs--
+      metrics.migration.failedJobs++
+      break
+      
+    case 'asset_uploaded':
+      if (data.uploadedBytes) {
+        metrics.migration.totalUploadedBytes += data.uploadedBytes
+      }
+      break
+      
+    case 'batch_processed':
+      if (data.assetsProcessed) {
+        metrics.migration.totalAssetsProcessed += data.assetsProcessed
+      }
+      break
+  }
+}
+
+/**
+ * Get migration metrics for monitoring
+ */
+function getMigrationMetrics() {
+  return {
+    ...metrics.migration,
+    successRate: metrics.migration.totalJobs > 0 
+      ? (metrics.migration.completedJobs / metrics.migration.totalJobs) * 100 
+      : 0,
+    averageUploadSize: metrics.migration.totalAssetsProcessed > 0
+      ? metrics.migration.totalUploadedBytes / metrics.migration.totalAssetsProcessed
+      : 0
+  }
+}
+
+/**
+ * Create migration logger for specific job
+ */
+function createMigrationLogger(jobId) {
+  return {
+    jobStarted: (metadata = {}) => {
+      logMigrationEvent('job_started', { jobId, ...metadata })
+    },
+    
+    jobCompleted: (stats = {}) => {
+      logMigrationEvent('job_completed', { jobId, ...stats })
+    },
+    
+    jobFailed: (error, stats = {}) => {
+      logMigrationEvent('job_failed', { 
+        jobId, 
+        error: error.message || error,
+        ...stats 
+      })
+    },
+    
+    batchStarted: (batchNumber, batchSize) => {
+      logMigrationEvent('batch_started', { jobId, batchNumber, batchSize })
+    },
+    
+    batchCompleted: (batchNumber, stats) => {
+      logMigrationEvent('batch_processed', { 
+        jobId, 
+        batchNumber, 
+        assetsProcessed: stats.processed,
+        uploadedBytes: stats.uploadedBytes,
+        failed: stats.failed
+      })
+    },
+    
+    assetUploaded: (assetId, uploadedBytes, storagePath) => {
+      logMigrationEvent('asset_uploaded', { 
+        jobId, 
+        assetId, 
+        uploadedBytes, 
+        storagePath 
+      })
+    },
+    
+    assetFailed: (assetId, error, phase = 'unknown') => {
+      logMigrationEvent('asset_failed', { 
+        jobId, 
+        assetId, 
+        error: error.message || error,
+        phase 
+      })
+    },
+    
+    progress: (processed, total, currentAsset = null) => {
+      const percentage = Math.round((processed / total) * 100)
+      logMigrationEvent('progress_update', { 
+        jobId, 
+        processed, 
+        total, 
+        percentage,
+        currentAsset: currentAsset?.title || currentAsset?.id
+      })
+    },
+    
+    info: (message, metadata = {}) => {
+      log('info', `Migration ${jobId}: ${message}`, metadata)
+    },
+    
+    warn: (message, metadata = {}) => {
+      log('warn', `Migration ${jobId}: ${message}`, metadata)
+    },
+    
+    error: (message, metadata = {}) => {
+      log('error', `Migration ${jobId}: ${message}`, metadata)
+    }
+  }
+}
+
 module.exports = {
   registerObservability,
   log,
   logError,
+  logMigrationEvent,
+  createMigrationLogger,
+  getMigrationMetrics,
   metrics,
   generateRequestId
 }

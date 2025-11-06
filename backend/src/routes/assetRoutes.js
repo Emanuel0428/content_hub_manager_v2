@@ -1,155 +1,320 @@
 /**
  * Asset Routes
- * HTTP endpoints for asset management
+ * HTTP endpoints for asset management using Supabase
  */
 
+const { getSupabaseClient } = require('../config/supabaseClient')
 const mapError = require('../utils/errorMapper')
-const eventService = require('../services/eventService')
+const crypto = require('crypto')
 
-function registerAssetRoutes(app, repositories) {
-  const { assets } = repositories
+function registerAssetRoutes(app) {
+  const supabase = getSupabaseClient()
 
-  // Get all assets with filters
+  /**
+   * Get all assets with filters
+   * GET /api/assets?platform=twitch&category=overlay
+   */
   app.get('/api/assets', async (req, reply) => {
     try {
-      const { platform, category, resolution } = req.query
-      const data = await assets.findAllWithVersions({ platform, category, resolution })
-      reply.send({ data })
+      const { platform, category, resolution, userId } = req.query
+      
+      let query = supabase
+        .from('assets')
+        .select('*, asset_versions(*)')
+        .order('created_at', { ascending: false })
+      
+      // Apply filters if provided
+      if (userId) query = query.eq('user_id', userId)
+      if (platform) query = query.eq('platform_origin', platform)
+      if (category) {
+        // Category is stored in metadata JSON
+        query = query.contains('metadata', { category })
+      }
+      
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('Asset query error:', error)
+        return reply.status(500).send({ error: 'query_failed', message: error.message })
+      }
+      
+      return reply.send({ 
+        success: true,
+        data: data || [] 
+      })
     } catch (err) {
+      console.error('Get assets error:', err)
       const mapped = mapError(err)
       reply.status(mapped.status || 500).send({ error: mapped.message })
     }
   })
 
-  // Get asset by ID
+  /**
+   * Get asset by ID
+   * GET /api/assets/:id
+   */
   app.get('/api/assets/:id', async (req, reply) => {
     try {
       const { id } = req.params
-      const asset = await assets.findByIdWithVersions(id)
       
-      if (!asset) {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('*, asset_versions(*)')
+        .eq('id', id)
+        .single()
+      
+      if (error && error.code === 'PGRST116') {
         return reply.status(404).send({ error: 'not_found' })
       }
       
-      reply.send({ data: asset })
+      if (error) {
+        return reply.status(500).send({ error: 'query_failed', message: error.message })
+      }
+      
+      return reply.send({ success: true, data })
     } catch (err) {
+      console.error('Get asset error:', err)
       const mapped = mapError(err)
       reply.status(mapped.status || 500).send({ error: mapped.message })
     }
   })
 
-  // Create new asset
+  /**
+   * Create new asset with metadata
+   * POST /api/assets
+   * Body: { name, platform_origin, type, metadata, storagePath, size_bytes }
+   */
   app.post('/api/assets', async (req, reply) => {
     try {
       const {
-        title,
-        platform,
-        category,
-        resolution,
-        width,
-        height,
-        tags,
-        description,
-        file_size,
-        mime_type,
-        path: assetPath
+        name,
+        platform_origin,
+        type,
+        metadata = {},
+        storagePath,
+        size_bytes,
+        userId
       } = req.body || {}
 
-      if (!title || !platform || !assetPath) {
-        return reply.status(400).send({ error: 'missing_fields' })
+      console.log('📝 Creating asset:', { name, platform_origin, storagePath })
+
+      if (!name || !platform_origin || !storagePath) {
+        return reply.status(400).send({ 
+          error: 'missing_fields',
+          message: 'name, platform_origin, and storagePath are required' 
+        })
       }
 
-      const assetId = await assets.createWithVersion(
-        { title, platform, category, resolution, width, height, tags, description, file_size, mime_type },
-        assetPath
-      )
+      const assetId = crypto.randomUUID()
+      
+      // Create asset record
+      const { data: assetData, error: assetError } = await supabase
+        .from('assets')
+        .insert({
+          id: assetId,
+          user_id: userId,
+          name,
+          type: type || 'file',
+          size_bytes,
+          platform_origin,
+          metadata,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+      
+      if (assetError) {
+        console.error('Asset creation error:', assetError)
+        return reply.status(500).send({ 
+          error: 'asset_creation_failed',
+          message: assetError.message 
+        })
+      }
 
-      // Emit event
-      eventService.emit('asset.created', {
-        assetId,
-        title,
-        platform,
-        category,
-        path: assetPath
+      // Create asset version record
+      const versionId = crypto.randomUUID()
+      const { error: versionError } = await supabase
+        .from('asset_versions')
+        .insert({
+          id: versionId,
+          asset_id: assetId,
+          version_number: 1,
+          storage_path: storagePath,
+          checksum: null,
+          created_at: new Date().toISOString(),
+          created_by: userId
+        })
+      
+      if (versionError) {
+        console.error('Version creation error:', versionError)
+        // Asset was created but version failed - log warning
+        console.warn('Asset created but version record failed for asset:', assetId)
+      }
+
+      return reply.send({ 
+        success: true,
+        id: assetId,
+        data: assetData?.[0] 
       })
-
-      reply.send({ id: assetId })
     } catch (err) {
+      console.error('Create asset error:', err)
       const mapped = mapError(err)
       reply.status(mapped.status || 500).send({ error: mapped.message })
     }
   })
 
-  // Update asset metadata
+  /**
+   * Update asset metadata
+   * PATCH /api/assets/:id
+   */
   app.patch('/api/assets/:id', async (req, reply) => {
     try {
       const { id } = req.params
-      const { title, category, resolution, width, height, tags, description } = req.body || {}
+      const { name, platform_origin, metadata } = req.body || {}
 
-      const updateData = {}
-      if (title !== undefined) updateData.title = title
-      if (category !== undefined) updateData.category = category
-      if (resolution !== undefined) updateData.resolution = resolution
-      if (width !== undefined) updateData.width = width
-      if (height !== undefined) updateData.height = height
-      if (tags !== undefined) updateData.tags = tags
-      if (description !== undefined) updateData.description = description
+      const updateData = {
+        updated_at: new Date().toISOString()
+      }
+      
+      if (name !== undefined) updateData.name = name
+      if (platform_origin !== undefined) updateData.platform_origin = platform_origin
+      if (metadata !== undefined) updateData.metadata = metadata
 
-      if (Object.keys(updateData).length === 0) {
-        return reply.status(400).send({ error: 'no_fields_to_update' })
+      const { data, error } = await supabase
+        .from('assets')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+      
+      if (error) {
+        return reply.status(500).send({ 
+          error: 'update_failed',
+          message: error.message 
+        })
       }
 
-      const changes = await assets.updateMetadata(id, updateData)
-
-      if (changes === 0) {
+      if (!data || data.length === 0) {
         return reply.status(404).send({ error: 'asset_not_found' })
       }
 
-      eventService.emit('asset.updated', { assetId: id, fields: Object.keys(updateData) })
-      reply.send({ ok: true })
+      return reply.send({ success: true, data: data[0] })
     } catch (err) {
+      console.error('Update asset error:', err)
       const mapped = mapError(err)
       reply.status(mapped.status || 500).send({ error: mapped.message })
     }
   })
 
-  // Search assets
+  /**
+   * Delete asset
+   * DELETE /api/assets/:id
+   */
+  app.delete('/api/assets/:id', async (req, reply) => {
+    try {
+      const { id } = req.params
+      const supabaseService = getSupabaseServiceClient()
+      
+      // Get asset first to get storage paths
+      const { data: asset, error: fetchError } = await supabase
+        .from('assets')
+        .select('*, asset_versions(*)')
+        .eq('id', id)
+        .single()
+      
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        return reply.status(500).send({ error: 'fetch_failed', message: fetchError.message })
+      }
+
+      if (!asset) {
+        return reply.status(404).send({ error: 'asset_not_found' })
+      }
+
+      // Delete from storage using service role to bypass RLS
+      if (asset.asset_versions && asset.asset_versions.length > 0) {
+        const storagePaths = asset.asset_versions.map(v => v.storage_path)
+        for (const path of storagePaths) {
+          const { error: storageError } = await supabaseService.storage.from('Assets').remove([path])
+          if (storageError) {
+            console.error('Failed to delete file from storage:', path, storageError)
+          }
+        }
+      }
+
+      // Delete asset versions
+      await supabase
+        .from('asset_versions')
+        .delete()
+        .eq('asset_id', id)
+
+      // Delete asset
+      const { error: deleteError } = await supabase
+        .from('assets')
+        .delete()
+        .eq('id', id)
+      
+      if (deleteError) {
+        return reply.status(500).send({ 
+          error: 'delete_failed',
+          message: deleteError.message 
+        })
+      }
+
+      return reply.send({ success: true, message: 'Asset deleted' })
+    } catch (err) {
+      console.error('Delete asset error:', err)
+      const mapped = mapError(err)
+      reply.status(mapped.status || 500).send({ error: mapped.message })
+    }
+  })
+
+  /**
+   * Search assets by name
+   * GET /api/search?q=query
+   */
   app.get('/api/search', async (req, reply) => {
     try {
       const q = req.query.q || ''
-      if (!q) return reply.send({ data: [] })
-
-      const data = await assets.search(q)
-      reply.send({ data })
-    } catch (err) {
-      const mapped = mapError(err)
-      reply.status(mapped.status || 500).send({ error: mapped.message })
-    }
-  })
-
-  // Get platform statistics
-  app.get('/api/stats/platforms', async (req, reply) => {
-    try {
-      const data = await assets.getPlatformStats()
-      reply.send({ data })
-    } catch (err) {
-      const mapped = mapError(err)
-      reply.status(mapped.status || 500).send({ error: mapped.message })
-    }
-  })
-
-  // Get category statistics
-  app.get('/api/stats/categories', async (req, reply) => {
-    try {
-      const { platform } = req.query
-
-      if (!platform) {
-        return reply.status(400).send({ error: 'platform_required' })
+      
+      if (!q) {
+        return reply.send({ success: true, data: [] })
       }
 
-      const data = await assets.getCategoryStats(platform)
-      reply.send({ data })
+      const { data, error } = await supabase
+        .from('assets')
+        .select('*')
+        .ilike('name', `%${q}%`)
+        .limit(20)
+      
+      if (error) {
+        return reply.status(500).send({ error: 'search_failed', message: error.message })
+      }
+
+      return reply.send({ success: true, data: data || [] })
     } catch (err) {
+      console.error('Search error:', err)
+      const mapped = mapError(err)
+      reply.status(mapped.status || 500).send({ error: mapped.message })
+    }
+  })
+
+  /**
+   * Get platform statistics
+   * GET /api/stats/platforms
+   */
+  app.get('/api/stats/platforms', async (req, reply) => {
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('platform_origin, count(*)')
+        .group('platform_origin')
+      
+      if (error) {
+        return reply.status(500).send({ error: 'query_failed', message: error.message })
+      }
+
+      return reply.send({ success: true, data: data || [] })
+    } catch (err) {
+      console.error('Stats error:', err)
       const mapped = mapError(err)
       reply.status(mapped.status || 500).send({ error: mapped.message })
     }
