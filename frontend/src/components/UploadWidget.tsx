@@ -43,6 +43,56 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
     }
   }, [categories, selectedCategory])
 
+  // Function to validate image dimensions
+  const validateImageDimensions = (file: File, category: any): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        resolve(true) // Skip validation for non-images
+        return
+      }
+
+      const img = new Image()
+      img.onload = () => {
+        const { width, height } = img
+        const dimensions = category.dimensions
+
+        // Skip validation for "Variable" dimensions
+        if (dimensions.includes('Variable')) {
+          resolve(true)
+          return
+        }
+
+        // Parse expected dimensions (e.g., "1920x1080" or "28x28, 56x56, 112x112")
+        const validDimensions = dimensions.split(', ').map((dim: string) => {
+          const [w, h] = dim.split('x').map(Number)
+          return { width: w, height: h }
+        })
+
+        // Check if current image matches any valid dimension (±100px tolerance)
+        const tolerance = 100
+        const isValid = validDimensions.some((validDim: any) => {
+          const widthMatch = Math.abs(width - validDim.width) <= tolerance
+          const heightMatch = Math.abs(height - validDim.height) <= tolerance
+          return widthMatch && heightMatch
+        })
+
+        if (!isValid) {
+          const expectedText = validDimensions.map((d: any) => `${d.width}x${d.height}`).join(' or ')
+          onError(`Image dimensions (${width}x${height}) don't match expected size: ${expectedText} (±${tolerance}px tolerance)`)
+        }
+
+        resolve(isValid)
+      }
+
+      img.onerror = () => {
+        onError('Failed to read image dimensions')
+        resolve(false)
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   const handleFile = async (file: File) => {
     if (!file) return
     
@@ -62,6 +112,19 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
       return
     }
     
+    // Get selected category details for validation
+    const selectedCategoryDetails = categories.find(cat => cat.id === selectedCategory)
+    if (!selectedCategoryDetails) {
+      onError('Invalid category selected')
+      return
+    }
+    
+    // Validate image dimensions
+    const dimensionsValid = await validateImageDimensions(file, selectedCategoryDetails)
+    if (!dimensionsValid) {
+      return // Error already shown in validation function
+    }
+    
     try {
       setIsLoading(true)
       setProgress(0)
@@ -75,6 +138,16 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
       const uploadRes = await uploadFile(file)
       console.log('✅ File uploaded successfully:', uploadRes)
 
+      // Get image dimensions if it's an image
+      let imageDimensions = null
+      if (file.type.startsWith('image/')) {
+        imageDimensions = await new Promise<{width: number, height: number}>((resolve) => {
+          const img = new Image()
+          img.onload = () => resolve({ width: img.width, height: img.height })
+          img.src = URL.createObjectURL(file)
+        })
+      }
+
       // Create asset metadata in Supabase database
       const assetResult = await createAsset({
         name: file.name,
@@ -82,7 +155,9 @@ export default function UploadWidget({ onError, onUploadComplete }: UploadWidget
         type: 'file',
         metadata: {
           category: selectedCategory,
-          originalMimeType: file.type
+          originalMimeType: file.type,
+          dimensions: imageDimensions ? `${imageDimensions.width}x${imageDimensions.height}` : null,
+          categoryExpected: selectedCategoryDetails.dimensions
         },
         storagePath: uploadRes.path,
         size_bytes: file.size,

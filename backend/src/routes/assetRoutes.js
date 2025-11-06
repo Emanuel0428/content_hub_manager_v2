@@ -212,6 +212,7 @@ function registerAssetRoutes(app) {
   app.delete('/api/assets/:id', async (req, reply) => {
     try {
       const { id } = req.params
+      const supabaseService = getSupabaseServiceClient()
       
       // Get asset first to get storage paths
       const { data: asset, error: fetchError } = await supabase
@@ -228,11 +229,14 @@ function registerAssetRoutes(app) {
         return reply.status(404).send({ error: 'asset_not_found' })
       }
 
-      // Delete from storage
+      // Delete from storage using service role to bypass RLS
       if (asset.asset_versions && asset.asset_versions.length > 0) {
         const storagePaths = asset.asset_versions.map(v => v.storage_path)
         for (const path of storagePaths) {
-          await supabase.storage.from('Assets').remove([path])
+          const { error: storageError } = await supabaseService.storage.from('Assets').remove([path])
+          if (storageError) {
+            console.error('Failed to delete file from storage:', path, storageError)
+          }
         }
       }
 

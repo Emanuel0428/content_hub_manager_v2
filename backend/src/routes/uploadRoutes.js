@@ -17,13 +17,6 @@ function registerUploadRoutes(app) {
    * Body: multipart/form-data with file
    */
   app.post('/api/upload', async (req, reply) => {
-    console.log('=== UPLOAD REQUEST START ===')
-    console.log('Method:', req.method)
-    console.log('URL:', req.url)
-    console.log('Headers:', {
-      authorization: req.headers.authorization ? '***' : 'none',
-      contentType: req.headers['content-type']
-    })
     
     try {
       const supabase = getSupabaseClient()
@@ -67,6 +60,13 @@ function registerUploadRoutes(app) {
             
             const fileBuffer = Buffer.concat(chunks)
             
+            console.log('📊 File buffer stats:', {
+              filename,
+              bufferLength: fileBuffer.length,
+              totalBytes,
+              mimetype: part.mimetype
+            })
+            
             // Validate file size (max 500MB)
             const maxSize = 500 * 1024 * 1024
             if (fileBuffer.length > maxSize) {
@@ -85,7 +85,6 @@ function registerUploadRoutes(app) {
             const uniqueName = `${timestamp}-${hash}.${ext}`
             const storagePath = `assets/${uniqueName}`
             
-            console.log(`📤 Uploading to Supabase Storage: ${storagePath}`)
             
             // Upload to Supabase Storage using service role (bypasses RLS)
             const { data: uploadData, error: uploadError } = await supabaseService.storage

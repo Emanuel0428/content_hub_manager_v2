@@ -16,7 +16,7 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
   const categories = usePlatformCategories('youtube');
   const { darkMode } = useTheme();
   const { user } = useAuth();
-  const { assets, loading, error } = useAssetFilter({ 
+  const { assets, loading, error, refetch } = useAssetFilter({ 
     platform: 'youtube',
     userId: user?.id 
   });
@@ -96,6 +96,7 @@ export default function YouTubeView({ onError }: YouTubeViewProps) {
             loading={loading}
             platformColor={YOUTUBE_COLOR}
             onError={onError}
+            onAssetUpdated={refetch}
           />
         ))}
       </div>

@@ -15,7 +15,7 @@ const TIKTOK_COLOR = '#000000';
 export default function TikTokView({ onError }: TikTokViewProps) {
   const categories = usePlatformCategories('tiktok');
   const { user } = useAuth();
-  const { assets, loading, error } = useAssetFilter({ 
+  const { assets, loading, error, refetch } = useAssetFilter({ 
     platform: 'tiktok',
     userId: user?.id 
   });
@@ -96,6 +96,7 @@ export default function TikTokView({ onError }: TikTokViewProps) {
             loading={loading}
             platformColor={TIKTOK_COLOR}
             onError={onError}
+            onAssetUpdated={refetch}
           />
         ))}
       </div>

@@ -126,6 +126,11 @@ export async function updateAsset(id: string, payload: UpdateAssetPayload) {
   return r.data
 }
 
+export async function deleteAsset(id: string) {
+  const r = await api.delete<{ success: boolean; message: string }>(`/api/assets/${id}`)
+  return r.data
+}
+
 // Upload API
 export async function uploadFile(file: File, onProgress?: (progress: number) => void) {
   const formData = new FormData()

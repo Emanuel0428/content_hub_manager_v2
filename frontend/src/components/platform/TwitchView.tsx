@@ -15,7 +15,7 @@ const TWITCH_COLOR = '#9146FF';
 export default function TwitchView({ onError }: TwitchViewProps) {
   const categories = usePlatformCategories('twitch');
   const { user } = useAuth();
-  const { assets, loading, error } = useAssetFilter({ 
+  const { assets, loading, error, refetch } = useAssetFilter({ 
     platform: 'twitch',
     userId: user?.id 
   });
@@ -99,6 +99,7 @@ export default function TwitchView({ onError }: TwitchViewProps) {
             loading={loading}
             platformColor={TWITCH_COLOR}
             onError={onError}
+            onAssetUpdated={refetch}
           />
         ))}
       </div>
