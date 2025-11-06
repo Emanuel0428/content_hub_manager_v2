@@ -13,6 +13,7 @@ const { registerAuth } = require('./middleware/auth');
 
 // Routes
 const registerRoutes = require('./routes');
+const { createDependencies } = require('./config/dependencies');
 
 // Initialize Fastify
 const app = Fastify({ logger: false });
@@ -27,11 +28,11 @@ registerObservability(app);
 // Register auth middleware (disabled by default for dev)
 registerAuth(app, { enableAuth: process.env.ENABLE_AUTH === 'true' });
 
-// Create empty repositories object since we're using Supabase directly
-const repositories = {};
+// Create dependency graph (repositories/services)
+const dependencies = createDependencies();
 
-// Register all routes
-registerRoutes(app, repositories);
+// Register all routes with dependencies (allows DI and incremental migration)
+registerRoutes(app, dependencies);
 
 // Serve uploaded files from public directory
 app.register(fastifyStatic, { 

@@ -10,18 +10,18 @@ const registerAuthRoutes = require('./authRoutes')
 /**
  * Register all application routes
  */
-function registerRoutes(app, repositories) {
+function registerRoutes(app, deps = {}) {
   // Health check
   app.get('/api/health', async () => ({ ok: true, message: 'Server is running with Supabase' }))
 
-  // Asset routes (now using Supabase)
-  registerAssetRoutes(app)
-  
+  // Asset routes (prefer service via deps, fallback to legacy behavior)
+  registerAssetRoutes(app, deps)
+
   // Upload routes (uploads to Supabase Storage)
-  registerUploadRoutes(app)
-  
+  registerUploadRoutes(app, deps)
+
   // Authentication routes (Fastify format)
-  registerAuthRoutes(app)
+  registerAuthRoutes(app, deps)
   
   // TODO: Implement checklist and event routes with Supabase
   // registerChecklistRoutes(app)
